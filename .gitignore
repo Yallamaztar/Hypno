@@ -1,0 +1,12 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.yaml
+*.db*
+*.so
+*.dylib
+
+# Go workspace file
+go.work
+go.work.sum
