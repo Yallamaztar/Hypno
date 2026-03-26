@@ -109,20 +109,3 @@ func (c *Config) Load() (*Config, error) {
 
 	return cfg, nil
 }
-
-func (g GameStrings) Name(key string) string {
-	if v, ok := g.Weapons[key]; ok {
-		return v
-	}
-	if v, ok := g.Attachments[key]; ok {
-		return v
-	}
-	if v, ok := g.Equipment[key]; ok {
-		return v
-	}
-	if v, ok := g.Killstreaks[key]; ok {
-		return v
-	}
-
-	return key
-}
