@@ -148,7 +148,7 @@ type playerInfo struct {
 	ClientNum int
 }
 
-func (r *Register) FindPlayer(partial string) *playerInfo {
+func (r *Register) FindPlayerPartial(partial string) *playerInfo {
 	name := strings.ToLower(strings.TrimSpace(partial))
 
 	status, err := r.rc.Status()
