@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"plugin/internal/bank"
 	"plugin/internal/commands/gamble"
+	"plugin/internal/commands/pay"
 	"plugin/internal/config"
 	"plugin/internal/discord/webhook"
 	"plugin/internal/links"
@@ -36,7 +37,7 @@ func registerClientCommands(
 	reg.RegisterCommand(register.Command{
 		Name:     "link",
 		Aliases:  []string{"lnk", "linkdc"},
-		MinLevel: LevelUser,
+		MinLevel: levelUser,
 		MinArgs:  0,
 		Help:     "Usage: ^6!link",
 		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
@@ -72,7 +73,7 @@ func registerClientCommands(
 	reg.RegisterCommand(register.Command{
 		Name:     "gamble",
 		Aliases:  []string{"g", "cf", "coinflip"},
-		MinLevel: LevelUser,
+		MinLevel: levelUser,
 		Help:     "Usage: ^6!gamble ^7<amount>",
 		MinArgs:  1,
 		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
@@ -108,7 +109,7 @@ func registerClientCommands(
 	reg.RegisterCommand(register.Command{
 		Name:     "pay",
 		Aliases:  []string{"pp", "payplayer", "transfer"},
-		MinLevel: LevelUser,
+		MinLevel: levelUser,
 		Help:     "Usage: ^6!pay <player> <amount>",
 		MinArgs:  2,
 		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
@@ -124,7 +125,7 @@ func registerClientCommands(
 				return
 			}
 
-			t := reg.FindPlayer(args[0])
+			t := reg.FindPlayerPartial(args[0])
 			if t == nil {
 				rc.Tell(clientNum, fmt.Sprintf("player ^6%s ^7couldnt be found", args[0]))
 				return
@@ -136,22 +137,131 @@ func registerClientCommands(
 				return
 			}
 
+			res, err := pay.Pay(playerID, target.ID, amount, cfg, players, wallet, walletStats, webhook)
+			if err != nil {
+				rc.Tell(clientNum, err.Error())
+				return
+			}
+
+			rc.Tell(clientNum, res.Message)
 		},
 	})
 
 	// !balance (!bal) <player (optional)>
 	// check your or another players balance
-	reg.RegisterCommand(register.Command{})
+	reg.RegisterCommand(register.Command{
+		Name:     "balance",
+		Aliases:  []string{"bal", "money", "wallet"},
+		MinLevel: levelUser,
+		Help:     "Usage: ^6!balance <player>",
+		MinArgs:  0,
+		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
+			if len(args) == 0 {
+				balance, err := wallet.GetBalance(playerID)
+				if err != nil {
+					rc.Tell(clientNum, "^1Error ^7getting your balance")
+					return
+				}
+
+				rc.Tell(clientNum, fmt.Sprintf("Your balance: ^6%s%d", cfg.Gambling.Currency, balance))
+				return
+			}
+
+			t := reg.FindPlayerPartial(args[0])
+			if t == nil {
+				rc.Tell(clientNum, fmt.Sprintf("player ^6%s ^7couldnt be found", args[0]))
+				return
+			}
+
+			target, err := players.GetByGUID(t.GUID)
+			if err != nil {
+				rc.Tell(clientNum, t.Name+" doesnt exists")
+				return
+			}
+
+			balance, err := wallet.GetBalance(target.ID)
+			if err != nil {
+				rc.Tell(clientNum, "^1Error ^7getting player's balance")
+				return
+			}
+
+			rc.Tell(clientNum, fmt.Sprintf("^6%s's ^7balance: ^6%s%d", t.Name, cfg.Gambling.Currency, balance))
+		},
+	})
 
 	// !bankbalance (!bank)
 	// check banks balance
-	reg.RegisterCommand(register.Command{})
+	reg.RegisterCommand(register.Command{
+		Name:     "bankbalance",
+		Aliases:  []string{"bb", "bank", "bankbal"},
+		MinLevel: levelUser,
+		Help:     "Usage: ^6!bankbalance",
+		MinArgs:  0,
+		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
+			bal, err := bank.GetBalance()
+			if err != nil {
+				rc.Tell(clientNum, "Couldnt get the banks balance")
+				return
+			}
+
+			rc.Tell(clientNum, "Bank balance is ^6"+cfg.Gambling.Currency+string(bal))
+		},
+	})
 
 	// !richest (!rich)
 	// lists top 5 richest players
-	reg.RegisterCommand(register.Command{})
+	reg.RegisterCommand(register.Command{
+		Name:     "richest",
+		Aliases:  []string{"rich"},
+		MinLevel: levelUser,
+		Help:     "Usage: ^6!richest",
+		MinArgs:  0,
+		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
+			wallets, err := wallet.GetTop5RichestWallets()
+			if err != nil {
+				rc.Tell(clientNum, "Couldnt get wallets")
+				return
+			}
+
+			for i, w := range wallets {
+				rc.Tell(clientNum, fmt.Sprintf("[%d] %s %s%s", i+1, w.Name, cfg.Gambling.Currency, utils.FormatMoney(w.Balance)))
+			}
+		},
+	})
 
 	// !poorest (!poor)
 	// lists top 5 poorest players
-	reg.RegisterCommand(register.Command{})
+	reg.RegisterCommand(register.Command{
+		Name:     "poorest",
+		Aliases:  []string{"rich"},
+		MinLevel: levelUser,
+		Help:     "Usage: ^6!poorest",
+		MinArgs:  0,
+		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
+			wallets, err := wallet.GetTop5PoorestWallets()
+			if err != nil {
+				rc.Tell(clientNum, "Couldnt get wallets")
+				return
+			}
+
+			for i, w := range wallets {
+				rc.Tell(clientNum, fmt.Sprintf("[%d] %s %s%s", i+1, w.Name, cfg.Gambling.Currency, utils.FormatMoney(w.Balance)))
+			}
+		},
+	})
+
+	// !discord (!dc)
+	// show the discord invite link (if discord enabled)
+	reg.RegisterCommand(register.Command{
+		Name:     "discord",
+		Aliases:  []string{"dc", "disc"},
+		MinLevel: levelUser,
+		Help:     "Usage: ^6!discord",
+		MinArgs:  1,
+		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
+			if cfg.Discord.Enabled && cfg.Discord.InviteLink != "" {
+				rc.Tell(clientNum, "^6"+cfg.Discord.InviteLink)
+			}
+		},
+	})
 }
