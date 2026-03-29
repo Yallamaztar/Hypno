@@ -69,3 +69,35 @@ func (s *Service) GetTop10RichestWallets() ([]wallet, error) {
 func (s *Service) GetTop10PoorestWallets() ([]wallet, error) {
 	return s.repo.GetBottomWallets(10)
 }
+
+func (s *Service) WalletToWallet(fromID, toID, amount int) error {
+	if amount <= 0 {
+		return fmt.Errorf("transfer amount must be positive")
+	}
+
+	if fromID == toID {
+		return fmt.Errorf("cannot transfer to the same wallet")
+	}
+
+	bal, err := s.repo.GetBalance(fromID)
+	if err != nil {
+		return err
+	}
+
+	if bal < amount {
+		return fmt.Errorf("insufficient balance")
+	}
+
+	if err := s.repo.Withdraw(fromID, amount); err != nil {
+		return err
+	}
+
+	// Deposit to receiver
+	if err := s.repo.Deposit(toID, amount); err != nil {
+		// rollback attempt (very important)
+		_ = s.repo.Deposit(fromID, amount)
+		return fmt.Errorf("transfer failed (rolled back): %w", err)
+	}
+
+	return nil
+}
