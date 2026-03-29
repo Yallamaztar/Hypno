@@ -23,6 +23,8 @@ const (
 	levelDeveloper
 )
 
+type aliases []string
+
 func RegisterCommands(
 	cfg *config.Config,
 	rc *rcon.RCON,
