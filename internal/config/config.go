@@ -31,11 +31,13 @@ type Gambling struct {
 }
 
 type Economy struct {
-	Enabled         bool `yaml:"enabled"`
-	KillReward      int  `yaml:"kill_reward"`
-	JoinReward      int  `yaml:"join_reward"`
-	FirstTimeReward int  `yaml:"first_time_reward"`
-	DeathPenalty    int  `yaml:"death_penalty"`
+	Enabled         bool    `yaml:"enabled"`
+	KillReward      int     `yaml:"kill_reward"`
+	JoinReward      int     `yaml:"join_reward"`
+	FirstTimeReward int     `yaml:"first_time_reward"`
+	DeathPenalty    int     `yaml:"death_penalty"`
+	MaxSteal        float64 `yaml:"max_steal"` // percent
+	MaxGive         float64 `yaml:"max_give"`  // percent
 }
 
 type Levels struct {
@@ -73,6 +75,8 @@ func Default() *Config {
 			JoinReward:      500,
 			FirstTimeReward: 10_000,
 			DeathPenalty:    550,
+			MaxSteal:        12.5,
+			MaxGive:         0.5,
 		},
 
 		Levels: Levels{
