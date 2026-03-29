@@ -142,13 +142,13 @@ func (r *Register) tell(clientNum uint8, msg string) {
 	}
 }
 
-type playerInfo struct {
+type PlayerInfo struct {
 	Name      string
-	GUID      string
-	ClientNum int
+	GUID      *string
+	ClientNum *int
 }
 
-func (r *Register) FindPlayerPartial(partial string) *playerInfo {
+func (r *Register) FindPlayerPartial(partial string) *PlayerInfo {
 	name := strings.ToLower(strings.TrimSpace(partial))
 
 	status, err := r.rc.Status()
@@ -160,18 +160,18 @@ func (r *Register) FindPlayerPartial(partial string) *playerInfo {
 		target := strings.ToLower(p.Name)
 
 		if target == name {
-			return &playerInfo{
+			return &PlayerInfo{
 				Name:      p.Name,
-				GUID:      p.GUID,
-				ClientNum: p.ClientNum,
+				GUID:      &p.GUID,
+				ClientNum: &p.ClientNum,
 			}
 		}
 
 		if strings.Contains(target, name) {
-			return &playerInfo{
+			return &PlayerInfo{
 				Name:      p.Name,
-				GUID:      p.GUID,
-				ClientNum: p.ClientNum,
+				GUID:      &p.GUID,
+				ClientNum: &p.ClientNum,
 			}
 		}
 
@@ -182,10 +182,10 @@ func (r *Register) FindPlayerPartial(partial string) *playerInfo {
 				return nil
 			}
 
-			return &playerInfo{
+			return &PlayerInfo{
 				Name:      p.Name,
-				GUID:      p.GUID,
-				ClientNum: cn,
+				GUID:      &p.GUID,
+				ClientNum: &cn,
 			}
 		}
 	}

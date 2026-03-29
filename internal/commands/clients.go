@@ -131,7 +131,7 @@ func registerClientCommands(
 				return
 			}
 
-			target, err := players.GetByGUID(t.GUID)
+			target, err := players.GetByGUID(*t.GUID)
 			if err != nil {
 				rc.Tell(clientNum, t.Name+" doesnt exists")
 				return
@@ -173,7 +173,7 @@ func registerClientCommands(
 				return
 			}
 
-			target, err := players.GetByGUID(t.GUID)
+			target, err := players.GetByGUID(*t.GUID)
 			if err != nil {
 				rc.Tell(clientNum, t.Name+" doesnt exists")
 				return

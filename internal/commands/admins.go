@@ -7,7 +7,9 @@ import (
 	"plugin/internal/players"
 	"plugin/internal/rcon"
 	"plugin/internal/register"
+	"plugin/internal/utils"
 	"plugin/internal/wallet"
+	"strings"
 )
 
 func registerAdminCommands(
@@ -214,7 +216,21 @@ func registerAdminCommands(
 		MinLevel: levelAdmin,
 		MinArgs:  1,
 		Help:     "Usage: ^6!teleport ^7<player> <player (optional)>",
-		Handler:  func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {},
+		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
+			args, err := parseArgs(args)
+			if err != nil {
+				rc.Tell(clientNum, err.Error())
+				return
+			}
+
+			cn1, cn2, err := resolveClientNums(rc, reg, clientNum, args)
+			if err != nil {
+				rc.Tell(clientNum, err.Error())
+				return
+			}
+
+			rc.SetInDvar(fmt.Sprintf("teleport %d %d", cn1, cn2))
+		},
 	})
 
 	// !sayas (!says) <player> <message>
@@ -224,8 +240,54 @@ func registerAdminCommands(
 		Aliases:  aliases{"says", "sa"},
 		MinLevel: levelAdmin,
 		MinArgs:  2,
-		Help:     "Usage: ^6!sayas ^7<player> <message>",
-		Handler:  func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {},
+		Help:     "Usage: ^6!sayas ^7<player> <message> [--dead (-d) | --enemy (-e)]",
+		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
+			args, err := parseArgs(args)
+			if err != nil {
+				rc.Tell(clientNum, err.Error())
+				return
+			}
+
+			var dead, enemy bool
+			filtered := make([]string, len(args))
+
+			for _, arg := range args {
+				switch arg {
+				case "-d", "--dead":
+					dead = true
+
+				case "-e", "--enemy":
+					enemy = true
+
+				default:
+					filtered = append(filtered, arg)
+				}
+			}
+
+			if len(filtered) < 2 {
+				rc.Tell(clientNum, "Usage: ^6!sayas ^7<player> <message> [--dead (-d) | --enemy (-e)]")
+				return
+			}
+
+			message := strings.Join(filtered[1:], " ")
+			target := reg.FindPlayerPartial(filtered[0])
+			if target == nil || *target.ClientNum == -1 {
+				target = &register.PlayerInfo{Name: filtered[0]}
+			}
+
+			prefix := "^2"
+			if enemy {
+				prefix = "^1"
+			}
+
+			channel := "[Playin-All]"
+			if dead {
+				channel = "[Dead-All]"
+			}
+
+			rc.SayRaw(prefix + target.Name + " " + channel + ": ^7" + message)
+			rc.Tell(clientNum, "Message sent as "+target.Name)
+		},
 	})
 
 	// !stealmoney (!steal) <player> <amount>
@@ -236,7 +298,57 @@ func registerAdminCommands(
 		MinLevel: levelAdmin,
 		MinArgs:  2,
 		Help:     "Usage: ^6!stealmoney ^7<player> <amount>",
-		Handler:  func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {},
+		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
+			args, err := parseArgs(args)
+			if err != nil {
+				rc.Tell(clientNum, err.Error())
+				return
+			}
+
+			t := reg.FindPlayerPartial(args[0])
+			if t == nil {
+				rc.Tell(clientNum, args[0]+" not found")
+				return
+			}
+
+			target, err := players.GetByGUID(*t.GUID)
+			if err != nil {
+				rc.Tell(clientNum, t.Name+" not found")
+				return
+			}
+
+			bal, err := wallet.GetBalance(target.ID)
+			if err != nil {
+				rc.Tell(clientNum, "couldnt get "+t.Name+"'s wallet")
+				return
+			}
+
+			amount, err := utils.ParseAmountArg(args[1], bal)
+			if err != nil {
+				rc.Tell(clientNum, err.Error())
+				return
+			}
+
+			if level == levelAdmin {
+				max := int(float64(bal) * cfg.Economy.MaxSteal)
+				if amount > max {
+					rc.Tell(clientNum, fmt.Sprintf("^1You can only steal up to ^6%s%s^7", cfg.Gambling.Currency, utils.FormatMoney(max)))
+					return
+				}
+			}
+
+			if amount > bal {
+				rc.Tell(clientNum, fmt.Sprintf("%s has ^1insufficient funds^7 (%s%s)", target.Name, cfg.Gambling.Currency, utils.FormatMoney(bal)))
+				return
+			}
+
+			if err := wallet.WalletToWallet(target.ID, playerID, amount); err != nil {
+				rc.Tell(clientNum, err.Error())
+				return
+			}
+			rc.Tell(clientNum, fmt.Sprintf("Took ^6%s%s ^7from %s", cfg.Gambling.Currency, utils.FormatMoney(amount), target.Name))
+			rc.Tell(uint8(*t.ClientNum), fmt.Sprintf("%s took ^6%s%s ^7from you LOL", playerName, cfg.Gambling.Currency, utils.FormatMoney(amount)))
+		},
 	})
 
 	// !givemoney (!give) <player> <amount>
@@ -247,7 +359,58 @@ func registerAdminCommands(
 		MinLevel: levelAdmin,
 		MinArgs:  2,
 		Help:     "Usage: ^6!givemoney ^7<player> <amount>",
-		Handler:  func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {},
+		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
+			args, err := parseArgs(args)
+			if err != nil {
+				rc.Tell(clientNum, err.Error())
+				return
+			}
+
+			t := reg.FindPlayerPartial(args[0])
+			if t == nil {
+				rc.Tell(clientNum, args[0]+" not found")
+				return
+			}
+
+			target, err := players.GetByGUID(*t.GUID)
+			if err != nil {
+				rc.Tell(clientNum, t.Name+" not found")
+				return
+			}
+
+			amount := utils.ParseAmount(args[1])
+			if amount <= 0 {
+				rc.Tell(clientNum, "Invalid amount")
+				return
+			}
+
+			if target.Level == levelAdmin {
+				bankbal, err := bank.GetBalance()
+				if err != nil {
+					rc.Tell(clientNum, "Couldnt get bank balance")
+					return
+				}
+
+				max := int(float64(bankbal) * cfg.Economy.MaxGive)
+				if int(amount) > max {
+					rc.Tell(clientNum, fmt.Sprintf("^1You can only give up to ^6%s%s^7", cfg.Gambling.Currency, utils.FormatMoney(max)))
+					return
+				}
+			}
+
+			if err := bank.Withdraw(int(amount)); err != nil {
+				rc.Tell(clientNum, "Couldnt get money from the bank")
+				return
+			}
+
+			if err := wallet.Deposit(target.ID, int(amount)); err != nil {
+				rc.Tell(clientNum, "Transfer failed")
+				return
+			}
+
+			rc.Tell(clientNum, fmt.Sprintf("Gave %s ^6%s%s", target.Name, cfg.Gambling.Currency, utils.FormatMoney(int(amount))))
+			rc.Tell(uint8(*t.ClientNum), fmt.Sprintf("%s gave you ^6%s%s", playerName, cfg.Gambling.Currency, utils.FormatMoney(int(amount))))
+		},
 	})
 
 	// !giveall (!ga) <amount>
@@ -258,7 +421,50 @@ func registerAdminCommands(
 		MinLevel: levelAdmin,
 		MinArgs:  1,
 		Help:     "Usage: ^6!giveall <amount>",
-		Handler:  func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {},
+		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
+			amount := utils.ParseAmount(args[0])
+			if amount <= 0 {
+				rc.Tell(clientNum, "Invalid amount")
+				return
+			}
+
+			status, err := rc.Status()
+			if err != nil {
+				rc.Tell(clientNum, "^1error ^7occurred, please try again later")
+				return
+			}
+
+			for _, p := range status.Players {
+				t, err := players.GetByGUID(p.GUID)
+				if err != nil {
+					rc.Tell(clientNum, "couldnt get player ("+p.GUID+")")
+					continue
+				}
+
+				bal, err := bank.GetBalance()
+				if err != nil {
+					rc.Tell(clientNum, "couldnt get bank balance")
+					continue
+				}
+
+				if int(amount) > bal {
+					rc.Tell(clientNum, "bank ^1ran ^7out of money boohoo")
+					break
+				}
+
+				if err := bank.Withdraw(int(amount)); err != nil {
+					rc.Tell(clientNum, "Couldnt get money from the bank")
+					break
+				}
+
+				if err := wallet.Deposit(t.ID, int(amount)); err != nil {
+					rc.Tell(clientNum, "Transfer failed")
+					break
+				}
+			}
+
+			rc.Say(fmt.Sprintf("%s gave ^6%s%s to everyone", playerName, cfg.Gambling.Currency, utils.FormatMoney(int(amount))))
+		},
 	})
 
 	// !setorigin (!so) <player (optional)> <x> <y> <z>
