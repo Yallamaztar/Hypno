@@ -204,7 +204,7 @@ func registerClientCommands(
 				return
 			}
 
-			rc.Tell(clientNum, "Bank balance is ^6"+cfg.Gambling.Currency+string(bal))
+			rc.Tell(clientNum, fmt.Sprintf("Bank balance is ^6%s%d", cfg.Gambling.Currency, bal))
 		},
 	})
 
