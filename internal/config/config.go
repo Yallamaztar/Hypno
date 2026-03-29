@@ -75,8 +75,8 @@ func Default() *Config {
 			JoinReward:      500,
 			FirstTimeReward: 10_000,
 			DeathPenalty:    550,
-			MaxSteal:        12.5,
-			MaxGive:         0.5,
+			MaxSteal:        0.15,
+			MaxGive:         0.05,
 		},
 
 		Levels: Levels{
