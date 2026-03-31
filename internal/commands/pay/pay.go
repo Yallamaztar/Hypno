@@ -76,6 +76,11 @@ func Pay(
 		webhook.PayWebhook(from.Name, to.Name, amount)
 	}
 
+	target, err := player.GetByID(toPlayerID)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Result{
 		FromPlayer:  fromPlayerID,
 		ToPlayer:    toPlayerID,
@@ -83,10 +88,10 @@ func Pay(
 		FromBalance: fromBalance - amount,
 		ToBalance:   toBalance,
 		Message: fmt.Sprintf(
-			"You paid %s%d to player %d",
+			"You paid %s%d to %s",
 			cfg.Gambling.Currency,
 			amount,
-			toPlayerID,
+			target.Name,
 		),
 	}, nil
 }
