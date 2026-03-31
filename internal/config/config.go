@@ -51,6 +51,11 @@ type Discord struct {
 	InviteLink  string `yaml:"invite_link"`
 	WebhookLink string `yaml:"webhook_link"`
 	BotToken    string `yaml:"bot_token"`
+
+	GamblingDescription string `yaml:"gambling_desc"`
+	PayDescription      string `yaml:"pay_desc"`
+	BalanceDescription  string `yaml:"balance_desc"`
+	LinkDescription     string `yaml:"link_desc"`
 }
 
 type IW4MAdmin struct {
@@ -66,7 +71,7 @@ func Default() *Config {
 			Enabled:     true,
 			WinChance:   0.45,
 			Currency:    "$",
-			ConsoleName: "^6PlutoPlugin^7",
+			ConsoleName: "Hypno",
 		},
 
 		Economy: Economy{
