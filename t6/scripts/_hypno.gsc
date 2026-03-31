@@ -8,10 +8,10 @@ init() {
 inDvarListener() {
     level endon("game_ended");
     for(;;) {
-        if (GetDvarInt("hypno_enabled") != 1) [
+        if (GetDvarInt("hypno_enabled") != 1) {
             wait 0.5;
             continue
-        ]
+        }
 
         cmd = getInDvar();
         if (cmd != "") {
@@ -33,6 +33,10 @@ resetInDvar() {
 
 getOutDvar() {
     return GetDvar("hypno_out");
+}
+
+setOutDvar(val) {
+    SetDvar("hypno_out", val);
 }
 
 registerCommand(name, minArgs, handler) {
@@ -90,12 +94,18 @@ findPlayerByClientNum(n) {
 }
 
 registerClientCommands() {
+    registerCommand("plugin_ready", 0, ::on_ready);
+
     registerCommand("freeze", 2, ::impl_freeze);
     registerCommand("setspeed", 2, ::impl_setspeed);
     registerCommand("swap", 2, ::impl_swap);
     registerCommand("dropgun", 2, ::impl_dropgun);
     registerCommand("teleport", 2, ::impl_teleport);
     registerCommand("setorigin", 4, ::impl_setorigin);
+}
+
+on_ready() {
+    setOutDvar("success");
 }
 
 impl_freeze(args) {
