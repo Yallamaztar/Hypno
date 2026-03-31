@@ -47,37 +47,7 @@ func registerAdminCommands(
 				return
 			}
 
-			rc.SetInDvar(fmt.Sprintf("killplayer %d", cn))
-		},
-	})
-
-	// !dropgun (!dg) <player>
-	// drop a players weapon
-	reg.RegisterCommand(register.Command{
-		Name:     "dropgun",
-		Aliases:  aliases{"dg", "drop"},
-		MinLevel: levelAdmin,
-		MinArgs:  0,
-		Help:     "Usage: ^6!dropgun ^7<player>",
-		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
-			args, err := parseArgs(args)
-			if err != nil {
-				rc.Tell(clientNum, err.Error())
-				return
-			}
-
-			cn, err := resolveClientNum(rc, reg, clientNum, args)
-			if err != nil {
-				rc.Tell(clientNum, err.Error())
-				return
-			}
-
-			if cn == -1 {
-				rc.Tell(clientNum, "player ^6couldnt ^7be found")
-				return
-			}
-
-			rc.SetInDvar(fmt.Sprintf("killplayer %d", cn))
+			rc.SetInDvar(fmt.Sprintf("freeze %d %d", clientNum, cn))
 		},
 	})
 
@@ -87,7 +57,7 @@ func registerAdminCommands(
 		Name:     "setspeed",
 		Aliases:  aliases{"ss", "sets", "sspeed"},
 		MinLevel: levelAdmin,
-		MinArgs:  0,
+		MinArgs:  1,
 		Help:     "Usage ^6!setspeed ^7<player> <amount>",
 		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
 			args, err := parseArgs(args)
@@ -103,11 +73,20 @@ func registerAdminCommands(
 			}
 
 			if cn == -1 {
-				rc.Tell(clientNum, "player ^6couldnt ^7be found")
+				rc.Tell(clientNum, "Player ^6couldnt ^7be found")
 				return
 			}
 
-			rc.SetInDvar(fmt.Sprintf("setspeed %d", cn))
+			var speed string
+			if len(args) == 1 {
+				rc.Tell(clientNum, fmt.Sprintf("Setting your speed to: %s", speed))
+				speed = args[0]
+			} else {
+				rc.Tell(clientNum, fmt.Sprintf("Setting %s's speed to %s", rc.NameByClientNum(cn), speed))
+				speed = args[1]
+			}
+
+			rc.SetInDvar(fmt.Sprintf("setspeed %d %s", cn, speed))
 		},
 	})
 
@@ -174,6 +153,19 @@ func registerAdminCommands(
 				return
 			}
 
+			name2 := rc.NameByClientNum(cn2)
+			if name2 == "" {
+				rc.Tell(clientNum, "couldnt find target")
+				return
+			}
+
+			if int(clientNum) == cn1 {
+				rc.Tell(clientNum, "swapping with ^6"+name2)
+			} else {
+				name := rc.NameByClientNum(cn1)
+				rc.Tell(clientNum, "swapping ^6"+name+" ^7with ^6"+name2)
+			}
+
 			rc.SetInDvar(fmt.Sprintf("swap %d %d", cn1, cn2))
 		},
 	})
@@ -204,6 +196,12 @@ func registerAdminCommands(
 				return
 			}
 
+			if int(clientNum) == cn {
+				rc.Tell(clientNum, "dropping your weapon")
+			} else {
+				rc.Tell(clientNum, "Dropping "+rc.NameByClientNum(cn)+"'s weapon")
+			}
+
 			rc.SetInDvar(fmt.Sprintf("dropgun %d", cn))
 		},
 	})
@@ -229,6 +227,11 @@ func registerAdminCommands(
 				return
 			}
 
+			if cn1 == cn2 {
+				rc.Tell(clientNum, "cannot tp same player")
+				return
+			}
+
 			rc.SetInDvar(fmt.Sprintf("teleport %d %d", cn1, cn2))
 		},
 	})
@@ -249,19 +252,18 @@ func registerAdminCommands(
 			}
 
 			var dead, enemy bool
-			filtered := make([]string, len(args))
+			filtered := make([]string, 0, len(args))
 
 			for _, arg := range args {
 				switch arg {
 				case "-d", "--dead":
 					dead = true
-
+					continue
 				case "-e", "--enemy":
 					enemy = true
-
-				default:
-					filtered = append(filtered, arg)
+					continue
 				}
+				filtered = append(filtered, arg)
 			}
 
 			if len(filtered) < 2 {
@@ -269,11 +271,12 @@ func registerAdminCommands(
 				return
 			}
 
-			message := strings.Join(filtered[1:], " ")
 			target := reg.FindPlayerPartial(filtered[0])
 			if target == nil || *target.ClientNum == -1 {
 				target = &register.PlayerInfo{Name: filtered[0]}
 			}
+
+			message := strings.Join(filtered[1:], " ")
 
 			prefix := "^2"
 			if enemy {
@@ -471,69 +474,10 @@ func registerAdminCommands(
 	// set players origin to given coords
 	reg.RegisterCommand(register.Command{
 		Name:     "setorigin",
-		Aliases:  aliases{"givea", "ga"},
+		Aliases:  aliases{"so", "setorg", "setpos"},
 		MinLevel: levelAdmin,
 		MinArgs:  3,
 		Help:     "Usage: ^6!setorigin ^7<player (optional)> <x> <y> <z>",
-		Handler:  func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {},
-	})
-
-	// !origin (!org) <player (optional)>
-	// get your or another players origin (coords)
-	reg.RegisterCommand(register.Command{
-		Name:     "origin",
-		Aliases:  aliases{"org", "coords"},
-		MinLevel: levelAdmin,
-		MinArgs:  0,
-		Help:     "Usage: ^6!origin ^7<player (optional)>",
-		Handler:  func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {},
-	})
-
-	/*
-	 * IW4M-Admin gameinterface overrides
-	 * these just work way faster than iw4m-admins
-	 * slow gameinterface, if you dont have IW4M-Admin,
-	 * these commands will still work
-	 */
-
-	// !giveweapon (!gw) <player> <weapon>
-	reg.RegisterCommand(register.Command{
-		Name:     "giveweapon",
-		Aliases:  aliases{"gw"},
-		MinLevel: levelAdmin,
-		MinArgs:  2,
-		Help:     "Usage: ^6!giveweapon ^7<player> <weapon>",
-		Handler:  func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {},
-	})
-
-	// !takeweapons (!tw) <player>
-	reg.RegisterCommand(register.Command{
-		Name:     "takeweapons",
-		Aliases:  aliases{"tw"},
-		MinLevel: levelAdmin,
-		MinArgs:  1,
-		Help:     "usage: ^6!takeweapons ^7<player>",
-		Handler:  func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {},
-	})
-
-	// !switchteams (!st) <player>
-	reg.RegisterCommand(register.Command{
-		Name:     "switchteams",
-		Aliases:  aliases{"st"},
-		MinLevel: levelAdmin,
-		MinArgs:  1,
-		Help:     "usage: ^6!switchteams ^7<player>",
-		Handler:  func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {},
-	})
-
-	// !hide (!hd) <player (optional)>
-	// hide yourself or a player
-	reg.RegisterCommand(register.Command{
-		Name:     "hide",
-		Aliases:  aliases{"hd", "hid", "invisible", "invis"},
-		MinLevel: levelAdmin,
-		MinArgs:  0,
-		Help:     "Usage: ^6!hide ^7<player>",
 		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
 			args, err := parseArgs(args)
 			if err != nil {
@@ -552,7 +496,147 @@ func registerAdminCommands(
 				return
 			}
 
-			rc.SetInDvar(fmt.Sprintf("hideplayer %d", cn))
+			rc.SetInDvar(fmt.Sprintf("setorigin %d %s %s %s", cn, args[1], args[2], args[3]))
+		},
+	})
+
+	/*
+	 * IW4M-Admin gameinterface overrides
+	 * these just work way faster than iw4m-admins
+	 * slow gameinterface, if you dont have IW4M-Admin,
+	 * these commands will still work
+	 */
+
+	// !giveweapon (!gw) <player (optional)> <weapon>
+	reg.RegisterCommand(register.Command{
+		Name:     "giveweapon",
+		Aliases:  aliases{"gw"},
+		MinLevel: levelAdmin,
+		MinArgs:  0,
+		Help:     "Usage: ^6!giveweapon ^7<player (optional)> <weapon>",
+		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
+			args, err := parseArgs(args)
+			if err != nil {
+				rc.Tell(clientNum, err.Error())
+				return
+			}
+
+			cn, err := resolveClientNum(rc, reg, clientNum, args)
+			if err != nil {
+				rc.Tell(clientNum, err.Error())
+				return
+			}
+
+			if cn == -1 {
+				rc.Tell(clientNum, "player ^6couldnt ^7be found")
+				return
+			}
+
+			weapon := args[len(args)-1]
+			if int(clientNum) == cn {
+				rc.Tell(clientNum, "giving you weapon:")
+				rc.Tell(clientNum, "^6"+weapon)
+			} else {
+				rc.Tell(clientNum, "giving "+rc.NameByClientNum(cn)+" weapon:")
+				rc.Tell(clientNum, "^6"+weapon)
+			}
+
+			rc.SetInDvar(fmt.Sprintf("giveweapon %d %s", cn, weapon))
+		},
+	})
+
+	// !takeweapons (!tw) <player (optional)>
+	reg.RegisterCommand(register.Command{
+		Name:     "takeweapons",
+		Aliases:  aliases{"tw"},
+		MinLevel: levelAdmin,
+		MinArgs:  0,
+		Help:     "usage: ^6!takeweapons ^7<player>",
+		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
+			args, err := parseArgs(args)
+			if err != nil {
+				rc.Tell(clientNum, err.Error())
+				return
+			}
+
+			cn, err := resolveClientNum(rc, reg, clientNum, args)
+			if err != nil {
+				rc.Tell(clientNum, err.Error())
+				return
+			}
+
+			if cn == -1 {
+				rc.Tell(clientNum, "player ^6couldnt ^7be found")
+				return
+			}
+
+			if int(clientNum) == cn {
+				rc.Tell(clientNum, "Taking your weapons")
+			} else {
+				rc.Tell(clientNum, "Taking "+rc.NameByClientNum(cn)+"'s weapons")
+			}
+
+			rc.SetInDvar(fmt.Sprintf("takeweapons %d", cn))
+		},
+	})
+
+	// !switchteams (!st) <player (optional)>
+	reg.RegisterCommand(register.Command{
+		Name:     "switchteams",
+		Aliases:  aliases{"st"},
+		MinLevel: levelAdmin,
+		MinArgs:  0,
+		Help:     "usage: ^6!switchteams ^7<player (optional)>",
+		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
+			args, err := parseArgs(args)
+			if err != nil {
+				rc.Tell(clientNum, err.Error())
+				return
+			}
+
+			cn, err := resolveClientNum(rc, reg, clientNum, args)
+			if err != nil {
+				rc.Tell(clientNum, err.Error())
+				return
+			}
+
+			if cn == -1 {
+				rc.Tell(clientNum, "player ^6couldnt ^7be found")
+				return
+			}
+
+			rc.Tell(clientNum, "Switching teams")
+			rc.SetInDvar(fmt.Sprintf("switchteams %d", cn))
+		},
+	})
+
+	// !hide (!hd) <player (optional)>
+	// hide yourself or a player
+	reg.RegisterCommand(register.Command{
+		Name:     "hide",
+		Aliases:  aliases{"hd", "hid", "invisible", "invis"},
+		MinLevel: levelAdmin,
+		MinArgs:  0,
+		Help:     "Usage: ^6!hide ^7<player (optional)>",
+		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
+			args, err := parseArgs(args)
+			if err != nil {
+				rc.Tell(clientNum, err.Error())
+				return
+			}
+
+			cn, err := resolveClientNum(rc, reg, clientNum, args)
+			if err != nil {
+				rc.Tell(clientNum, err.Error())
+				return
+			}
+
+			if cn == -1 {
+				rc.Tell(clientNum, "player ^6couldnt ^7be found")
+				return
+			}
+
+			rc.SetInDvar(fmt.Sprintf("hideplayer %d %d", clientNum, cn))
 		},
 	})
 
@@ -563,7 +647,26 @@ func registerAdminCommands(
 		MinLevel: levelAdmin,
 		MinArgs:  2,
 		Help:     "usage: ^6!alert ^7<player> <message>",
-		Handler:  func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {},
+		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
+			args, err := parseArgs(args)
+			if err != nil {
+				rc.Tell(clientNum, err.Error())
+				return
+			}
+
+			cn, err := resolveClientNum(rc, reg, clientNum, args)
+			if err != nil {
+				rc.Tell(clientNum, err.Error())
+				return
+			}
+
+			if cn == -1 {
+				rc.Tell(clientNum, "player ^6couldnt ^7be found")
+				return
+			}
+
+			rc.SetInDvar(fmt.Sprintf("alert %d %s", cn, strings.Join(args[1:], " ")))
+		},
 	})
 
 	// !kill (!kpl) <player>
@@ -592,7 +695,7 @@ func registerAdminCommands(
 				return
 			}
 
-			rc.SetInDvar(fmt.Sprintf("killplayer %d", cn))
+			rc.SetInDvar(fmt.Sprintf("killplayer %d %d", clientNum, cn))
 		},
 	})
 
@@ -604,6 +707,26 @@ func registerAdminCommands(
 		MinLevel: levelAdmin,
 		MinArgs:  1,
 		Help:     "usage: ^6!setspectator ^7<player>",
-		Handler:  func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {},
+		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
+			args, err := parseArgs(args)
+			if err != nil {
+				rc.Tell(clientNum, err.Error())
+				return
+			}
+
+			cn, err := resolveClientNum(rc, reg, clientNum, args)
+			if err != nil {
+				rc.Tell(clientNum, err.Error())
+				return
+			}
+
+			if cn == -1 {
+				rc.Tell(clientNum, "player ^6couldnt ^7be found")
+				return
+			}
+
+			rc.Tell(clientNum, "Setting player to spectator")
+			rc.SetInDvar(fmt.Sprintf("setspectator %d %d", clientNum, cn))
+		},
 	})
 }
