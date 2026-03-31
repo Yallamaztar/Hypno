@@ -243,7 +243,7 @@ func (r *RCON) Tell(clientNum uint8, message string) error {
 	}
 
 	packet := r.buildPacket(
-		fmt.Sprintf("%d %s %s",
+		fmt.Sprintf("%d [^6%s^7]: %s",
 			clientNum, r.config.Gambling.ConsoleName, message,
 		), true,
 	)
@@ -301,4 +301,19 @@ func (r *RCON) ClientNumByGUID(guid string) int {
 	}
 
 	return -1
+}
+
+func (r *RCON) NameByClientNum(clientNum int) string {
+	status, err := r.Status()
+	if err != nil {
+		return ""
+	}
+
+	for _, p := range status.Players {
+		if p.ClientNum == clientNum {
+			return p.Name
+		}
+	}
+
+	return ""
 }
