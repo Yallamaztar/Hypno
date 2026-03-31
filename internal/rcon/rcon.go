@@ -77,7 +77,13 @@ func (r *RCON) TestConnection() error {
 		time.Sleep(250 * time.Millisecond)
 
 		d, err := r.GetDvar("hypno_out")
-		if err != nil || d.Value == "" {
+		if err != nil {
+			r.log.Errorf("reading hypno_out: %v\n", err)
+			time.Sleep(500 * time.Millisecond)
+			continue
+		}
+
+		if d.Value == "" {
 			r.log.Errorf("reading hypno_out: %v\n", err)
 			time.Sleep(500 * time.Millisecond)
 			continue
@@ -85,6 +91,7 @@ func (r *RCON) TestConnection() error {
 
 		if d.Value == "success" {
 			r.log.Println("Hypno RCON ready")
+			r.SetOutDvar("") // reset out dvar
 			return nil
 		}
 		time.Sleep(850 * time.Millisecond)
@@ -199,6 +206,10 @@ func (r *RCON) SetInDvar(value string) {
 	}
 
 	r.SetDvar("hypno_in", value)
+}
+
+func (r *RCON) SetOutDvar(value string) {
+	r.SetDvar("hypno_out", value)
 }
 
 func (r *RCON) SetPrefixDvar(value string) {

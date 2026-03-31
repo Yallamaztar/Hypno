@@ -107,7 +107,6 @@ registerClientCommands() {
 }
 
 on_ready() {
-    println("FOUND FOUND FOUND");
     setOutDvar("success");
 }
 

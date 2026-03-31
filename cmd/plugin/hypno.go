@@ -53,7 +53,6 @@ func main() {
 	pStats := stats.NewPlayerStats(stats.NewPlayerStatsRepository(db))
 	gStats := stats.NewGamblingStats(stats.NewGamblingStatsRepository(db))
 	wStats := stats.NewWalletStats(stats.NewWalletStatsRepository(db))
-
 	log.Infoln("Database migrations done")
 
 	var wh *webhook.Webhook
