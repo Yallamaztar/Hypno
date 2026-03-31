@@ -2,6 +2,8 @@
 
 init() {
     level.hypno_cmds = [];
+    SetDvar("hypno_enabled", 1);
+    level registerClientCommands();
     level thread inDvarListener();
 }
 
@@ -9,8 +11,8 @@ inDvarListener() {
     level endon("game_ended");
     for(;;) {
         if (GetDvarInt("hypno_enabled") != 1) {
-            wait 0.5;
-            continue
+            wait 0.1;
+            continue;
         }
 
         cmd = getInDvar();
@@ -49,17 +51,17 @@ registerCommand(name, minArgs, handler) {
 }
 
 exec(cmd) {
-    if (!IsDefined(command) || command == "") {
+    if (!IsDefined(cmd) || cmd == "") {
         return;
     }
 
-    parts = StrTok(command, " ");
+    parts = StrTok(cmd, " ");
     if (!IsDefined(parts) || parts.size == 0) {
         return;
     }
 
-    def = findRegisteredCommand(ToLower(parts[0]))
-    is (!IsDefined(def)) {
+    def = findRegisteredCommand(ToLower(parts[0]));
+    if (!IsDefined(def)) {
         return;
     }
 
@@ -76,9 +78,9 @@ exec(cmd) {
 }
 
 findRegisteredCommand(name) {
-    for (i = 0; i < level._commands.size; i++) {
-        if (level._commands[i].name == name) {
-            return level._commands[i];
+    for (i = 0; i < level.hypno_cmds.size; i++) {
+        if (level.hypno_cmds[i].name == name) {
+            return level.hypno_cmds[i];
         }
     }
     return undefined;
@@ -105,6 +107,7 @@ registerClientCommands() {
 }
 
 on_ready() {
+    println("FOUND FOUND FOUND");
     setOutDvar("success");
 }
 
@@ -181,7 +184,7 @@ impl_switchteams(args) {
     target = findPlayerByClientNum(args[0]);
     team = level.allies;
     if (target.team == "allies") team = level.axis;
-    target [[team]]()
+    target [[team]]();
 }
 
 impl_hide(args) {
