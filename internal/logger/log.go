@@ -150,3 +150,7 @@ func (l *Logger) Fatal(v ...any) {
 func (l *Logger) Fatalf(format string, v ...any) {
 	l.base.Fatalf(l.prefix()+" "+levelTag("FATAL")+" "+format, v...)
 }
+
+func (l *Logger) Debugln(v ...any) {
+	l.base.Println(append([]any{l.prefix(), levelTag("DEBUG")}, v...)...)
+}
