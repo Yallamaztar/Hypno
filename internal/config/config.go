@@ -38,6 +38,7 @@ type Economy struct {
 	DeathPenalty    int     `yaml:"death_penalty"`
 	MaxSteal        float64 `yaml:"max_steal"` // percent
 	MaxGive         float64 `yaml:"max_give"`  // percent
+	MaxBet          int     `yaml:"max_bet"`
 }
 
 type Levels struct {
@@ -82,6 +83,7 @@ func Default() *Config {
 			DeathPenalty:    550,
 			MaxSteal:        0.15,
 			MaxGive:         0.05,
+			MaxBet:          0, // 0 = no limit
 		},
 
 		Levels: Levels{

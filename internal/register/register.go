@@ -71,7 +71,7 @@ func (r *Register) RegisterCommand(cmd Command) {
 		r.commands[strings.ToLower(alias)] = &c
 	}
 
-	r.log.Printf("Successfully registered command %s (%v)", c.Name, c.Aliases)
+	r.log.Printf("Successfully registered command %s %v (level: %d)", c.Name, c.Aliases, c.MinLevel)
 }
 
 func (r *Register) Execute(
