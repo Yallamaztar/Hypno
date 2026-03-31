@@ -69,6 +69,11 @@ func promptDiscord() Discord {
 			WebhookLink: readLine(reader, "Enter Discord webhook link: "),
 			InviteLink:  readLine(reader, "Enter Discord invite link (optional): "),
 			BotToken:    readLine(reader, "Enter Discord bot token: "),
+
+			GamblingDescription: "GAMBLE GAMBLE GAMBLE ALL YOUR MONEY",
+			PayDescription:      "Pay another player",
+			BalanceDescription:  "View your or another players balance",
+			LinkDescription:     "Link your ingame account",
 		}
 	}
 	return Discord{}
