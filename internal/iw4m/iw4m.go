@@ -42,7 +42,7 @@ func (w *IW4MWrapper) do(endpoint string) (*http.Response, error) {
 		return nil, err
 	}
 	req.Header.Set("Cookie", w.cookie)
-	req.Header.Set("User-Agent", "plutoplugin-bot/1.0") // for shits n gigles
+	req.Header.Set("User-Agent", "hypno-bot/1.0") // for shits n gigles
 
 	return w.client.Do(req)
 }

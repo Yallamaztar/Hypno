@@ -75,7 +75,7 @@ func (w *Webhook) send(p payload) {
 
 func basePayload() payload {
 	return payload{
-		Username:  "PlutoPlugin Bot",
+		Username:  "Hypno Bot",
 		AvatarURL: "https://media.discordapp.net/attachments/1475891647190405192/1476325227247177934/PLUTOPLUHH.png?ex=69a0b682&is=699f6502&hm=1a6e0a5918f3bac9e1108ac08d5b6fa50fa4af0b3c6433ab07c31f40df54190e&=&format=webp&quality=lossless",
 	}
 }

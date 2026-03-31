@@ -69,28 +69,28 @@ func New(host, password string, cfg *config.Config, log *logger.Logger) (*RCON, 
 }
 
 func (r *RCON) TestConnection() error {
-	r.SetDvar("plutoplugin_enabled", "1")
+	r.SetDvar("hypno_enabled", "1")
 	for i := range 5 {
-		r.log.Infof("Attempt %d/5: Attempting to connect to PlutoPlugin GSC\n", i)
+		r.log.Infof("Attempt %d/5: Attempting to connect to Hypno GSC\n", i)
 
-		r.SetDvar("plutoplugin_in", "plugin_ready")
+		r.SetDvar("hypno_in", "plugin_ready")
 		time.Sleep(250 * time.Millisecond)
 
-		d, err := r.GetDvar("plutoplugin_out")
+		d, err := r.GetDvar("hypno_out")
 		if err != nil || d.Value == "" {
-			r.log.Errorf("reading plutoplugin_out: %v\n", err)
+			r.log.Errorf("reading hypno_out: %v\n", err)
 			time.Sleep(500 * time.Millisecond)
 			continue
 		}
 
 		if d.Value == "success" {
-			r.log.Println("PlutoPlugin RCON ready")
+			r.log.Println("Hypno RCON ready")
 			return nil
 		}
 		time.Sleep(850 * time.Millisecond)
 	}
 
-	return errors.New("PlutoPlugin not found on the server")
+	return errors.New("HypnoPlugin not found on the server")
 }
 
 func (r *RCON) Close() error {
@@ -198,7 +198,11 @@ func (r *RCON) SetInDvar(value string) {
 		value = fmt.Sprintf("\"%s\"", strings.ReplaceAll(value, "\"", "\\\""))
 	}
 
-	r.SetDvar("plutoplugin_in", value)
+	r.SetDvar("hypno_in", value)
+}
+
+func (r *RCON) SetPrefixDvar(value string) {
+	r.SetDvar("hypno_prefix", value)
 }
 
 func (r *RCON) GetDvar(dvar string) (*Dvar, error) {

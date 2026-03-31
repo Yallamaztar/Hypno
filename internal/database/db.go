@@ -58,7 +58,7 @@ const (
 )
 
 func Open() (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", "plutoplugin.db?_busy_timeout=5000&_journal_mode=WAL")
+	db, err := sql.Open("sqlite3", "hypno.db?_busy_timeout=5000&_journal_mode=WAL")
 	if err != nil {
 		return nil, err
 	}
