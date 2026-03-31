@@ -6,7 +6,7 @@
 *.db*
 *.so
 *.dylib
-
+*.log
 # Go workspace file
 go.work
 go.work.sum
