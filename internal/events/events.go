@@ -31,7 +31,7 @@ func RunLogTailer(
 ) {
 	eventsCh := make(chan event, 128)
 	go func() {
-		if err := tail(cfg.Server[index].LogPath, eventsCh); err != nil {
+		if err := tail(log, cfg.Server[index].LogPath, eventsCh); err != nil {
 			log.Fatalf("Failed to tail file: %s: %w", cfg.Server[index].LogPath, err)
 		}
 		close(eventsCh)
@@ -47,33 +47,47 @@ func RunLogTailer(
 		case *playerEvent:
 			switch event.Command {
 			case joinCommand:
+				fmt.Println("GOT JOIN EVENT")
 				go func() {
 					reg.SetClientNum(event.xuid, uint8(event.cn))
-
-					guid := rc.GUIDByClientNum(uint8(event.cn))
-					if guid == "" {
-						return
-					}
-
 					exists, err := players.ExistsByXUID(event.xuid)
 					if err != nil {
+						log.Warnln("Failed to check if player exists")
 						return
 					}
 
 					if !exists {
+						var guid string
+						for i := 0; i < 5; i++ {
+							guid = rc.GUIDByClientNum(uint8(event.cn))
+							if guid == "" {
+								continue
+							} else {
+								break
+							}
+						}
+
+						if guid == "" {
+							log.Errorln("Failed to get GUID for player")
+							return
+						}
+
+						log.Infoln("Player doesnt exists, creating profile")
 						id, err := players.Create(event.name, event.xuid, guid, 0, cfg, iw4m)
 						if err != nil {
+							log.Errorln("Failed to create player profile " + err.Error())
 							return
 						}
 
 						if err := wallet.Create(id, cfg.Economy.FirstTimeReward); err != nil {
+							log.Errorln("Failed to create wallet")
 							return
 						}
 
-						walletStats.Init(id)
-						walletStats.Deposit(id, cfg.Economy.FirstTimeReward)
+						_ = walletStats.Init(id)
+						_ = walletStats.Deposit(id, cfg.Economy.FirstTimeReward)
 
-						log.Printf("Created wallet for %s (%s) | ID: %d\n", event.name, event.xuid, id)
+						log.Infof("Created wallet for %s (%s) | ID: %d\n", event.name, event.xuid, id)
 
 						rc.Tell(uint8(event.cn),
 							fmt.Sprintf(
@@ -86,12 +100,18 @@ func RunLogTailer(
 
 					p, err := players.GetByXUID(event.xuid)
 					if err != nil {
+						log.Errorln("Failed to get player")
 						return
 					}
 
 					if cfg.IW4MAdmin.Enabled {
+						if p.IW4MID == nil {
+							log.Warnf("IW4MID is nil for %s", p.Name)
+							return
+						}
 						stats, err := iw4m.Stats(*p.IW4MID, index)
 						if err != nil {
+							log.Errorln("Failed to get IW4M-Admin stats")
 							return
 						}
 
@@ -104,12 +124,18 @@ func RunLogTailer(
 						walletStats.Deposit(p.ID, cfg.Economy.JoinReward)
 						rc.Tell(uint8(event.cn), fmt.Sprintf("^7Spawning bonus: %s%d", cfg.Gambling.Currency, cfg.Economy.JoinReward))
 					}
+
+					log.Infoln("Successfully processed join event for " + event.xuid)
 				}()
 
 			case quitCommand:
+				xuid := event.xuid
 				go func() {
-					reg.RemoveClientNum(event.xuid)
-					delete(stats, event.xuid)
+					reg.RemoveClientNum(xuid)
+
+					statsMu.Lock()
+					delete(stats, xuid)
+					statsMu.Unlock()
 				}()
 
 			case sayCommand:
@@ -130,15 +156,22 @@ func RunLogTailer(
 							return
 						}
 
-						go reg.Execute(uint8(event.cn), p.ID, event.name, event.xuid, p.Level, parts[0], args)
+						go func() {
+							defer func() {
+								if r := recover(); r != nil {
+									log.Errorf("panic in command: %v", r)
+								}
+							}()
+
+							reg.Execute(uint8(event.cn), p.ID, event.name, event.xuid, p.Level, parts[0], args)
+						}()
 					}
 				}
 			}
 
 		case *killEvent:
-			// on suicide just ignore
 			if event.attackerXUID == event.victimXUID {
-				return
+				continue
 			}
 
 			go func() {
@@ -197,11 +230,11 @@ func RunLogTailer(
 			if event.Command == roundStartCommand {
 				status, err := rc.Status()
 				if err != nil {
-					return
+					continue
 				}
 
 				if len(status.Players) < 4 {
-					return
+					continue
 				}
 
 				go func() {
@@ -248,11 +281,11 @@ func RunLogTailer(
 			if event.Command == roundEndCommand {
 				status, err := rc.Status()
 				if err != nil {
-					return
+					continue
 				}
 
 				if len(status.Players) < 4 {
-					return
+					continue
 				}
 
 				go func() {

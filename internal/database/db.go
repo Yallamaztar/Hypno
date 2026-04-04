@@ -15,6 +15,8 @@ const (
 	    xuid TEXT UNIQUE,
 	    guid TEXT UNIQUE,
 	    level INTEGER DEFAULT 0,
+		client_id INTEGER NULL,
+		discord_id INTEGER NULL,
 	    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);`
 

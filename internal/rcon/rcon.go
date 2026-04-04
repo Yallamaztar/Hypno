@@ -49,12 +49,12 @@ type RCON struct {
 func New(host, password string, cfg *config.Config, log *logger.Logger) (*RCON, error) {
 	addr, err := net.ResolveUDPAddr("udp", host)
 	if err != nil {
-		return nil, errors.New("failed to resolve address")
+		return nil, errors.New("failed to resolve address: " + err.Error())
 	}
 
 	conn, err := net.DialUDP("udp", nil, addr)
 	if err != nil {
-		return nil, errors.New("failed to connect to RCON server")
+		return nil, errors.New("failed to connect to RCON server: " + err.Error())
 	}
 
 	return &RCON{
@@ -90,7 +90,6 @@ func (r *RCON) TestConnection() error {
 		}
 
 		if d.Value == "success" {
-			r.log.Println("Hypno RCON ready")
 			r.SetOutDvar("") // reset out dvar
 			return nil
 		}
@@ -223,7 +222,7 @@ func (r *RCON) GetDvar(dvar string) (*Dvar, error) {
 
 	regexes := r.compileDvarPatterns(dvar)
 	var fallbackValue string
-	for attempt := range defaultRetryCount {
+	for attempt := 0; attempt < defaultRetryCount; attempt++ {
 		lines, err := r.queryDvar(dvar)
 		if err != nil {
 			return nil, fmt.Errorf("failed to query dvar %q: %w", dvar, err)

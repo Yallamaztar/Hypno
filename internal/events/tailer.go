@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"plugin/internal/logger"
 	"strings"
 	"time"
 )
@@ -76,16 +77,15 @@ type killEvent struct {
 	hitLocation  string
 }
 
-func tail(path string, eventsCh chan<- event) error {
+func tail(log *logger.Logger, path string, eventsCh chan<- event) error {
 	file, err := os.Open(path)
 	if err != nil {
-		return fmt.Errorf("Failed to open log file %s: %w", path, err)
+		return fmt.Errorf("failed to open log file %s: %w", path, err)
 	}
-
 	defer file.Close()
 
 	if _, err := file.Seek(0, io.SeekEnd); err != nil {
-		return fmt.Errorf("Failed to seek log file %s: %w", path, err)
+		return fmt.Errorf("failed to seek log file %s: %w", path, err)
 	}
 
 	reader := bufio.NewReader(file)
@@ -94,11 +94,14 @@ func tail(path string, eventsCh chan<- event) error {
 		line, err := reader.ReadString('\n')
 		if err != nil {
 			if errors.Is(err, io.EOF) {
+				// wait for new data
 				time.Sleep(100 * time.Millisecond)
+
+				reader = bufio.NewReader(file)
 				continue
 			}
 
-			return err
+			return fmt.Errorf("read error: %w", err)
 		}
 
 		line = strings.TrimRight(line, "\r\n")
@@ -108,14 +111,15 @@ func tail(path string, eventsCh chan<- event) error {
 
 		ev, err := parseEventLine(line)
 		if err != nil {
-			fmt.Printf("events: failed to parse line: %v\n", err)
+			log.Errorf("events: failed to parse line: %v\n", err)
 			continue
 		}
 
-		// non blocking channel
 		select {
 		case eventsCh <- ev:
-		default:
+		case <-time.After(2 * time.Second):
+			log.Warnln("eventsCh blocked for 2s:", line)
+			eventsCh <- ev // still send (block now)
 		}
 	}
 }
