@@ -190,22 +190,22 @@ func (r *walletStatsRepository) Get(playerID int) (*WalletStats, error) {
 }
 
 func (r *walletStatsRepository) Deposit(playerID int, amount int) error {
-	_, err := r.db.Exec(queries.WalletDeposit, amount, playerID)
+	_, err := r.db.Exec(queries.WalletDeposit, amount, amount, playerID)
 	return err
 }
 
 func (r *walletStatsRepository) Withdraw(playerID int, amount int) error {
-	_, err := r.db.Exec(queries.WalletWithdraw, amount, playerID)
+	_, err := r.db.Exec(queries.WalletWithdraw, amount, amount, playerID)
 	return err
 }
 
 func (r *walletStatsRepository) Pay(playerID int, amount int) error {
-	_, err := r.db.Exec(queries.WalletPay, amount, playerID)
+	_, err := r.db.Exec(queries.WalletPay, amount, amount, playerID)
 	return err
 }
 
 func (r *walletStatsRepository) Receive(playerID int, amount int) error {
-	_, err := r.db.Exec(queries.WalletReceive, amount, playerID)
+	_, err := r.db.Exec(queries.WalletReceive, amount, amount, playerID)
 	return err
 }
 

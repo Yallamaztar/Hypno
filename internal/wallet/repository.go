@@ -34,10 +34,14 @@ func NewRepository(db *sql.DB) Repository {
 	return &repository{db: db}
 }
 func (r *repository) Create(playerID int, startingBalance int) error {
-	_, err := r.db.Exec(queries.CreateWallet, playerID, startingBalance)
+	res, err := r.db.Exec(queries.CreateWallet, playerID, startingBalance)
+	if err != nil {
+		return err
+	}
+
+	_, err = res.RowsAffected()
 	return err
 }
-
 func (r *repository) GetBalance(playerID int) (int, error) {
 	var balance int
 	err := r.db.QueryRow(queries.GetWalletBalanceByPlayerID, playerID).Scan(&balance)
