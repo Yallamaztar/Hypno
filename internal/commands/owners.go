@@ -2,13 +2,11 @@ package commands
 
 import (
 	"fmt"
-	"plugin/internal/bank"
 	"plugin/internal/config"
 	"plugin/internal/players"
 	"plugin/internal/rcon"
 	"plugin/internal/register"
 	"plugin/internal/utils"
-	"plugin/internal/wallet"
 	"strings"
 )
 
@@ -16,10 +14,7 @@ func registerOwnerCommands(
 	cfg *config.Config,
 	rc *rcon.RCON,
 	reg *register.Register,
-
 	players *players.Service,
-	wallet *wallet.Service,
-	bank *bank.Service,
 ) {
 	// !gambling (!gmbl) <enable|disable|status>
 	// enable / disable gambling or view status of gambling
@@ -99,40 +94,6 @@ func registerOwnerCommands(
 				rc.Say("Max bet has been ^6disabled")
 			} else {
 				rc.Say(fmt.Sprintf("Max bet has been set to ^6 %s%d", cfg.Gambling.Currency, amount))
-			}
-		},
-	})
-
-	// !printmoney (!print) <amount>
-	// print more money fuck the economy!
-	reg.RegisterCommand(&register.Command{
-		Name:     "printmoney",
-		Aliases:  aliases{"print", "yidish", "shalom"},
-		MinLevel: levelOwner,
-		MinArgs:  1,
-		Help:     "Usage: ^6!printmoney ^7<amount>",
-		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
-			printToBank := false
-			if len(args) >= 2 && args[1] == "--bank" || args[1] == "-b" {
-				printToBank = true
-			}
-
-			amount := utils.ParseAmount(args[0])
-			if amount <= 0 {
-				rc.Tell(clientNum, "Invalid amount")
-				return
-			}
-
-			if printToBank {
-				if err := bank.Deposit(int(amount)); err != nil {
-					rc.Tell(clientNum, "Failed to print money")
-					return
-				}
-			}
-
-			if err := wallet.Deposit(playerID, int(amount)); err != nil {
-				rc.Tell(clientNum, "Failed to print money")
-				return
 			}
 		},
 	})

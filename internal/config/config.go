@@ -81,9 +81,9 @@ func Default() *Config {
 			JoinReward:      500,
 			FirstTimeReward: 10_000,
 			DeathPenalty:    550,
-			MaxSteal:        0.15,
-			MaxGive:         0.05,
-			MaxBet:          0, // 0 = no limit
+			MaxSteal:        0.10,  // 10% wallet balance
+			MaxGive:         0.005, // 0.5% bank balance
+			MaxBet:          0,     // 0 = no limit
 		},
 
 		Levels: Levels{

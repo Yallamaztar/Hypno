@@ -4,12 +4,9 @@ import (
 	"fmt"
 	"plugin/internal/bank"
 	"plugin/internal/config"
-	"plugin/internal/discord/webhook"
-	"plugin/internal/links"
 	"plugin/internal/players"
 	"plugin/internal/rcon"
 	"plugin/internal/register"
-	"plugin/internal/stats"
 	"plugin/internal/utils"
 	"plugin/internal/wallet"
 	"strconv"
@@ -24,13 +21,6 @@ func registerDeveloperCommands(
 	players *players.Service,
 	wallet *wallet.Service,
 	bank *bank.Service,
-	links *links.Service,
-
-	playerStats *stats.PlayerStatsService,
-	gambleStats *stats.GamblingStatsService,
-	walletStats *stats.WalletStatsService,
-
-	webhook *webhook.Webhook,
 ) {
 	// !printmoney (!print) <amount>
 	// print more money fuck the economy!

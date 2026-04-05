@@ -106,7 +106,7 @@ func main() {
 		rc, err := rcon.New(s.Host, s.Password, cfg, serverLog)
 		if err != nil {
 			serverLog.Errorf("Couldnt connect to RCON: %+v\n", err)
-			os.Exit(1)
+			continue
 		}
 
 		if err = rc.TestConnection(); err != nil {
