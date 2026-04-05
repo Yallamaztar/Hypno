@@ -8,6 +8,7 @@ const (
 	GetPlayerByXUID      = `SELECT id, name, xuid, guid, level, client_id, discord_id, created_at FROM players WHERE xuid = ?;`
 	GetPlayerByGUID      = `SELECT id, name, xuid, guid, level, client_id, discord_id, created_at FROM players WHERE guid = ?;`
 	GetPlayerByDiscordID = `SELECT id, name, xuid, guid, level, client_id, discord_id, created_at FROM players WHERE discord_id = ?;`
+	GetPlayerByLevel     = `SELECT id, name, xuid, guid, level, client_id, discord_id, created_at FROM players WHERE level = ? LIMIT 1;`
 
 	GetDiscordIDByID   = `SELECT discord_id FROM players WHERE id = ?;`
 	GetDiscordIDByXUID = `SELECT discord_id FROM players WHERE xuid = ?;`
@@ -16,9 +17,10 @@ const (
 	UpdatePlayerLevel     = `UPDATE players SET level = ? WHERE id = ?;`
 	UpdatePlayerName      = `UPDATE players SET name = ? WHERE id = ?;`
 
-	UserExistsByID   = `SELECT COUNT(1) FROM players WHERE id = ?;`
-	UserExistsByXUID = `SELECT COUNT(1) FROM players WHERE xuid = ?;`
-	UserExistsByGUID = `SELECT COUNT(1) FROM players WHERE guid = ?;`
+	UserExistsByID    = `SELECT COUNT(1) FROM players WHERE id = ?;`
+	UserExistsByXUID  = `SELECT COUNT(1) FROM players WHERE xuid = ?;`
+	UserExistsByGUID  = `SELECT COUNT(1) FROM players WHERE guid = ?;`
+	UserExistsByLevel = `SELECT COUNT(1) FROM players WHERE level = ?;`
 
 	GetAllUsers = `SELECT id, name, xuid, guid, level, client_id, created_at FROM players ORDER BY id ASC;`
 )
