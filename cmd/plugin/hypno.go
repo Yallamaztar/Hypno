@@ -115,7 +115,10 @@ func main() {
 			continue
 		}
 
-		rc.SetPrefixDvar("!")
+		if err := rc.SetPrefixDvar("!"); err != nil {
+			serverLog.Fatalf("Failed to set prefix dvar: %v\n", err)
+		}
+
 		serverLog.Infoln("Successfully connected to RCON & GSC")
 
 		serverLog.Infoln("Registering client commands")

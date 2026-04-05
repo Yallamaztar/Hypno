@@ -211,8 +211,33 @@ func (r *RCON) SetOutDvar(value string) {
 	r.SetDvar("hypno_out", value)
 }
 
-func (r *RCON) SetPrefixDvar(value string) {
-	r.SetDvar("hypno_prefix", value)
+func (r *RCON) SetPrefixDvar(value string) error {
+	for i := 0; i < 5; i++ {
+		r.SetDvar("hypno_prefix", value)
+
+		time.Sleep(250 * time.Millisecond)
+
+		d, err := r.GetDvar("hypno_prefix")
+		if err != nil {
+			r.log.Errorf("Failed to get prefix dvar (%d/5): %w", i+1, err)
+			continue
+		}
+
+		if d == nil {
+			r.log.Errorln("Failed to retrieve prefix dvar")
+			continue
+		}
+
+		if d.Value != value {
+			r.log.Errorln("Failed to set prefix dvar")
+			continue
+		}
+
+		r.log.Errorf("Attempt %d: mismatch (got %q, want %q)", i+1, d.Value, value)
+		return nil
+	}
+
+	return fmt.Errorf("Failed to set prefix dvar after 5 attempts")
 }
 
 func (r *RCON) GetDvar(dvar string) (*Dvar, error) {
