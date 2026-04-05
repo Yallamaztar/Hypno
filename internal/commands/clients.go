@@ -89,12 +89,19 @@ func registerClientCommands(
 		Aliases:  aliases{"lnk", "linkdc"},
 		MinLevel: levelUser,
 		MinArgs:  0,
-		Help:     "Usage: ^6!link",
+		Help:     "Usage: ^6!link <reset (optional)>",
 		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
 			discordID, err := players.GetDiscordIDByID(playerID)
 			if err != nil {
 				rc.Tell(clientNum, "^1Error ^7checking your account, try again later")
 				return
+			}
+
+			if len(args) >= 1 && args[0] == "reset" {
+				if discordID == "0" {
+					rc.Tell(clientNum, "You have ^6not ^7linked your account")
+					return
+				}
 			}
 
 			if discordID != "0" {

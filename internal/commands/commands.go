@@ -41,7 +41,8 @@ func RegisterCommands(
 
 	webhook *webhook.Webhook,
 ) {
-	registerOwnerCommands(cfg, rc, reg, players, wallet, bank)
+	registerDeveloperCommands(cfg, rc, reg, players, wallet, bank)
+	registerOwnerCommands(cfg, rc, reg, players)
 	registerAdminCommands(cfg, rc, reg, players, wallet, bank)
 	registerClientCommands(cfg, rc, reg, players, wallet, bank, links, playerStats, gambleStats, walletStats, webhook)
 }

@@ -90,48 +90,6 @@ func registerAdminCommands(
 		},
 	})
 
-	// !xuid (!info) <player>
-	// show player name, xuid and client num
-	reg.RegisterCommand(&register.Command{
-		Name:     "xuid",
-		Aliases:  aliases{"info"},
-		MinLevel: levelAdmin,
-		MinArgs:  1,
-		Help:     "Usage: ^6!xuid ^7<player>",
-		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
-			args, err := parseArgs(args)
-			if err != nil {
-				rc.Tell(clientNum, err.Error())
-				return
-			}
-
-			cn, err := resolveClientNum(rc, reg, clientNum, args)
-			if err != nil {
-				rc.Tell(clientNum, err.Error())
-				return
-			}
-
-			if cn == -1 {
-				rc.Tell(clientNum, "player ^6couldnt ^7be found")
-				return
-			}
-
-			guid := rc.GUIDByClientNum(uint8(cn))
-			if guid == "" {
-				rc.Tell(clientNum, "player ^6isnt ^7online")
-				return
-			}
-
-			target, err := players.GetByGUID(guid)
-			if err != nil {
-				rc.Tell(clientNum, "player ^6couldnt ^7be found")
-				return
-			}
-
-			rc.Tell(clientNum, fmt.Sprintf("[^6%s^7] XUID: ^6%s^7 | ClientNum: ^6%d", target.Name, target.XUID, cn))
-		},
-	})
-
 	// !swap (!swp) <player> <player (optional)>
 	// swap places with player or player with another player
 	reg.RegisterCommand(&register.Command{
