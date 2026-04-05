@@ -20,7 +20,7 @@ const (
 	GetWalletStats    = `SELECT player_id, balance, total_paid, total_received, deposit_count, withdraw_count FROM wallet_stats WHERE player_id = ?;`
 	WalletDeposit     = `UPDATE wallet_stats SET balance = balance + ?, total_received = total_received + ?, deposit_count = deposit_count + 1 WHERE player_id = ?;`
 	WalletWithdraw    = `UPDATE wallet_stats SET balance = balance - ?, total_paid = total_paid + ?, withdraw_count = withdraw_count + 1 WHERE player_id = ?;`
-	WalletPay         = `UPDATE wallet_stats SET balance = balance + ?, total_paid = total_paid + ? WHERE player_id = ?;`
-	WalletReceive     = `UPDATE wallet_stats SET balance = balance - ?, total_received = total_received + ? WHERE player_id = ?;`
+	WalletPay         = `UPDATE wallet_stats SET balance = balance - ?, total_paid = total_paid + ? WHERE player_id = ?;`
+	WalletReceive     = `UPDATE wallet_stats SET balance = balance + ?, total_received = total_received + ? WHERE player_id = ?;`
 	ResetWalletStats  = `UPDATE wallet_stats SET balance = 0, total_paid = 0, total_received = 0, deposit_count = 0, withdraw_count = 0 WHERE player_id = ?;`
 )
