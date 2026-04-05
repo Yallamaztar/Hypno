@@ -27,9 +27,7 @@ var (
 	)
 
 	killReg = regexp.MustCompile(
-		`^K;(?P<vXuid>-?\w+);(?P<vClient>\d+);(?P<vTeam>\w+);(?P<vName>[^;]+);` +
-			`(?P<aXuid>-?\w+);(?P<aClient>\d+);(?P<aTeam>\w+);(?P<aName>[^;]+);` +
-			`(?P<weapon>[^;]+);(?P<damage>\d+);(?P<mod>\w+);(?P<hit>.+)$`,
+		`^K;(?P<vXuid>-?[A-Fa-f0-9_]{1,32}|bot\d+|0);(?P<vClient>\d+);(?P<vTeam>\w+);(?P<vName>[^;]+);(?P<aXuid>-?[A-Fa-f0-9_]{1,32}|bot\d+|0);(?P<aClient>\d+);(?P<aTeam>\w+);(?P<aName>[^;]+);(?P<weapon>[^;]+);(?P<damage>\d+);(?P<mod>\w+);(?P<hit>.+)$`,
 	)
 )
 
