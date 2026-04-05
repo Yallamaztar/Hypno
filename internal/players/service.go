@@ -52,6 +52,14 @@ func (s *Service) GetByGUID(guid string) (*Player, error) {
 	return s.repo.GetByGUID(guid)
 }
 
+func (s *Service) GetByLevel(level int) (*Player, error) {
+	return s.repo.GetByLevel(level)
+}
+
+func (s *Service) ExistsByLevel(level int) (bool, error) {
+	return s.repo.ExistsByLevel(level)
+}
+
 func (s *Service) GetByDiscordID(id string) (*Player, error) {
 	return s.repo.GetByDiscordID(id)
 }

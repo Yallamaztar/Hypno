@@ -28,6 +28,8 @@ type Repository interface {
 	GetByGUID(guid string) (*Player, error)
 	GetDiscordIDByID(id int) (string, error)
 	GetByDiscordID(id string) (*Player, error)
+	GetByLevel(level int) (*Player, error)
+	ExistsByLevel(level int) (bool, error)
 	UpdateDiscordID(id int, discordID string) error
 	UpdateName(id int, name string) error
 	UpdateLevel(id int, level int) error
@@ -124,6 +126,29 @@ func (r *repository) GetByDiscordID(id string) (*Player, error) {
 	}
 
 	return &p, nil
+}
+
+func (r *repository) GetByLevel(level int) (*Player, error) {
+	var p Player
+	err := r.db.QueryRow(queries.GetPlayerByLevel, level).Scan(
+		&p.ID, &p.Name, &p.XUID, &p.GUID, &p.Level, &p.IW4MID, &p.DiscordID, &p.CreatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &p, nil
+}
+
+func (r *repository) ExistsByLevel(level int) (bool, error) {
+	var count int
+	err := r.db.QueryRow(queries.UserExistsByLevel, level).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
 
 func (r *repository) UpdateDiscordID(id int, discordID string) error {
