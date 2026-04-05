@@ -57,7 +57,7 @@ func New(cfg *config.Config, rc *rcon.RCON, players *players.Service, log *logge
 		mu: sync.RWMutex{},
 	}
 }
-func (r *Register) RegisterCommand(cmd Command) {
+func (r *Register) RegisterCommand(cmd *Command) {
 	if cmd.Handler == nil {
 		panic("command " + cmd.Name + " registered with nil handler")
 	}
@@ -66,9 +66,9 @@ func (r *Register) RegisterCommand(cmd Command) {
 	defer r.mu.Unlock()
 
 	c := cmd
-	r.commands[strings.ToLower(c.Name)] = &c
+	r.commands[strings.ToLower(c.Name)] = c
 	for _, alias := range c.Aliases {
-		r.commands[strings.ToLower(alias)] = &c
+		r.commands[strings.ToLower(alias)] = c
 	}
 
 	r.log.Printf("Successfully registered command %s %v (level: %d)", c.Name, c.Aliases, c.MinLevel)
@@ -83,19 +83,23 @@ func (r *Register) Execute(
 	command string,
 	args []string,
 ) {
+	r.log.Infoln("Executing command:", command)
 	r.mu.RLock()
 	cmd, ok := r.commands[strings.ToLower(command)]
 	r.mu.RUnlock()
 
 	if !ok {
+		r.log.Infoln("Command not found:", command)
 		return
 	}
 
 	if cmd.Handler == nil {
+		r.log.Infoln("Command handler is nil:", cmd.Name)
 		return
 	}
 
 	if !r.hasPermission(level, cmd.MinLevel) {
+		r.log.Infoln("Player does not have permission for command:", cmd.Name)
 		r.tell(clientNum, fmt.Sprintf(
 			"You ^1don't ^7have permission for !%s",
 			cmd.Name,
@@ -104,13 +108,14 @@ func (r *Register) Execute(
 	}
 
 	if len(args) < int(cmd.MinArgs) {
+		r.log.Infoln("Not enough arguments for command:", cmd.Name)
 		if cmd.Help != "" {
 			r.tell(clientNum, cmd.Help)
 		}
 		return
 	}
 
-	cmd.Handler(clientNum, playerID, playerName, xuid, level, args)
+	go cmd.Handler(clientNum, playerID, playerName, xuid, level, args)
 }
 
 func (r *Register) SetClientNum(xuid string, clientNum uint8) {
