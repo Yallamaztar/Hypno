@@ -14,6 +14,7 @@ import (
 	"plugin/internal/stats"
 	"plugin/internal/utils"
 	"plugin/internal/wallet"
+	"strings"
 )
 
 func registerClientCommands(
@@ -32,11 +33,60 @@ func registerClientCommands(
 
 	webhook *webhook.Webhook,
 ) {
+	// !claimrole (!claim) <role>
+	// claim the owner | developer role ingame (one time use)
+	reg.RegisterCommand(&register.Command{
+		Name:     "claimrole",
+		Aliases:  aliases{"claim"},
+		MinLevel: levelUser,
+		MinArgs:  1,
+		Help:     "Usage: ^6!claimrole ^7<role>",
+		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
+			switch strings.ToLower(args[0]) {
+			case "owner":
+				exists, err := players.ExistsByLevel(levelOwner)
+				if err != nil {
+					rc.Tell(clientNum, "^1Error ^7checking owner status")
+					return
+				}
+				if !exists {
+					rc.Tell(clientNum, "^6Owner ^7role already claimed")
+					return
+				}
+
+				if err := players.UpdateLevel(playerID, levelOwner); err != nil {
+					rc.Tell(clientNum, "^1Error ^7updating player level")
+					return
+				}
+
+			case "developer":
+				exists, err := players.ExistsByLevel(levelDeveloper)
+				if err != nil {
+					rc.Tell(clientNum, "^1Error ^7checking developer status")
+					return
+				}
+				if !exists {
+					rc.Tell(clientNum, "^6Developer ^7role already claimed")
+					return
+				}
+
+				if err := players.UpdateLevel(playerID, levelDeveloper); err != nil {
+					rc.Tell(clientNum, "^1Error ^7updating player level")
+					return
+				}
+
+			default:
+				rc.Tell(clientNum, "^1Invalid ^7role ("+args[0]+")")
+			}
+
+		},
+	})
+
 	// !link (!lnk)
 	// link your ingame to a discord account
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "link",
-		Aliases:  []string{"lnk", "linkdc"},
+		Aliases:  aliases{"lnk", "linkdc"},
 		MinLevel: levelUser,
 		MinArgs:  0,
 		Help:     "Usage: ^6!link",
@@ -47,7 +97,7 @@ func registerClientCommands(
 				return
 			}
 
-			if discordID != "" {
+			if discordID != "0" {
 				rc.Tell(clientNum, "You have ^6already linked ^7your account")
 				return
 			}
@@ -70,9 +120,9 @@ func registerClientCommands(
 
 	// !gamble (!g) <amount>
 	// gamble money like a boss
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "gamble",
-		Aliases:  []string{"g", "cf", "coinflip"},
+		Aliases:  aliases{"g", "cf", "coinflip"},
 		MinLevel: levelUser,
 		Help:     "Usage: ^6!gamble ^7<amount>",
 		MinArgs:  1,
@@ -106,9 +156,9 @@ func registerClientCommands(
 
 	// !pay (!pp) <player> <amount>
 	// pay a player money
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "pay",
-		Aliases:  []string{"pp", "payplayer", "transfer"},
+		Aliases:  aliases{"pp", "payplayer", "transfer"},
 		MinLevel: levelUser,
 		Help:     "Usage: ^6!pay <player> <amount>",
 		MinArgs:  2,
@@ -149,9 +199,9 @@ func registerClientCommands(
 
 	// !balance (!bal) <player (optional)>
 	// check your or another players balance
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "balance",
-		Aliases:  []string{"bal", "money", "wallet"},
+		Aliases:  aliases{"bal", "money", "wallet"},
 		MinLevel: levelUser,
 		Help:     "Usage: ^6!balance <player>",
 		MinArgs:  0,
@@ -191,9 +241,9 @@ func registerClientCommands(
 
 	// !bankbalance (!bank)
 	// check banks balance
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "bankbalance",
-		Aliases:  []string{"bb", "bank", "bankbal"},
+		Aliases:  aliases{"bb", "bank", "bankbal"},
 		MinLevel: levelUser,
 		Help:     "Usage: ^6!bankbalance",
 		MinArgs:  0,
@@ -210,9 +260,9 @@ func registerClientCommands(
 
 	// !richest (!rich)
 	// lists top 5 richest players
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "richest",
-		Aliases:  []string{"rich"},
+		Aliases:  aliases{"rich"},
 		MinLevel: levelUser,
 		Help:     "Usage: ^6!richest",
 		MinArgs:  0,
@@ -231,9 +281,9 @@ func registerClientCommands(
 
 	// !poorest (!poor)
 	// lists top 5 poorest players
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "poorest",
-		Aliases:  []string{"rich"},
+		Aliases:  aliases{"poor"},
 		MinLevel: levelUser,
 		Help:     "Usage: ^6!poorest",
 		MinArgs:  0,
@@ -252,9 +302,9 @@ func registerClientCommands(
 
 	// !discord (!dc)
 	// show the discord invite link (if discord enabled)
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "discord",
-		Aliases:  []string{"dc", "disc"},
+		Aliases:  aliases{"dc", "disc"},
 		MinLevel: levelUser,
 		Help:     "Usage: ^6!discord",
 		MinArgs:  1,

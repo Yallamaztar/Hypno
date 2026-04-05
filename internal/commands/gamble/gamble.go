@@ -46,7 +46,7 @@ func Gamble(
 	}
 
 	if balance < amount {
-		return nil, fmt.Errorf("You ^6dont ^7have enough money (missing %s%d)", cfg.Gambling.Currency, (balance - amount))
+		return nil, fmt.Errorf("You ^6dont ^7have enough money (missing %s%d)", cfg.Gambling.Currency, (amount - balance))
 	}
 
 	if didWin(cfg.Gambling.WinChance) {

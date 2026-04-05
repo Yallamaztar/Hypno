@@ -23,7 +23,7 @@ func registerAdminCommands(
 ) {
 	// !freeze (!fz) <player>
 	// lock controls on a player
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "freeze",
 		Aliases:  aliases{"fz", "freez"},
 		MinLevel: levelAdmin,
@@ -53,7 +53,7 @@ func registerAdminCommands(
 
 	// !setspeed (!ss) <player (optional)> <amount>
 	// set your or another players speed (float: 0.01-unlimited)
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "setspeed",
 		Aliases:  aliases{"ss", "sets", "sspeed"},
 		MinLevel: levelAdmin,
@@ -92,7 +92,7 @@ func registerAdminCommands(
 
 	// !xuid (!info) <player>
 	// show player name, xuid and client num
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "xuid",
 		Aliases:  aliases{"info"},
 		MinLevel: levelAdmin,
@@ -134,7 +134,7 @@ func registerAdminCommands(
 
 	// !swap (!swp) <player> <player (optional)>
 	// swap places with player or player with another player
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "swap",
 		Aliases:  aliases{"swp"},
 		MinLevel: levelAdmin,
@@ -172,7 +172,7 @@ func registerAdminCommands(
 
 	// !dropgun (!dg) <player>
 	// drop a players gun
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "dropgun",
 		Aliases:  aliases{"dg", "dw", "dropweapon"},
 		MinLevel: levelAdmin,
@@ -208,7 +208,7 @@ func registerAdminCommands(
 
 	// !teleport (!tp) <player> <player (optional)>
 	// teleport to a player or a player to a player
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "teleport",
 		Aliases:  aliases{"tp"},
 		MinLevel: levelAdmin,
@@ -238,7 +238,7 @@ func registerAdminCommands(
 
 	// !sayas (!says) <player> <message>
 	// send a message as a player
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "sayas",
 		Aliases:  aliases{"says", "sa"},
 		MinLevel: levelAdmin,
@@ -295,7 +295,7 @@ func registerAdminCommands(
 
 	// !stealmoney (!steal) <player> <amount>
 	// steal money from a player (cfg.Economy.MaxSteal)
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "stealmoney",
 		Aliases:  aliases{"steal", "take"},
 		MinLevel: levelAdmin,
@@ -356,7 +356,7 @@ func registerAdminCommands(
 
 	// !givemoney (!give) <player> <amount>
 	// give money to a player (cfg.Economy.MaxGive)
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "givemoney",
 		Aliases:  aliases{"give", "gi"},
 		MinLevel: levelAdmin,
@@ -418,7 +418,7 @@ func registerAdminCommands(
 
 	// !giveall (!ga) <amount>
 	// gives all players online money
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "giveall",
 		Aliases:  aliases{"givea", "ga"},
 		MinLevel: levelAdmin,
@@ -472,7 +472,7 @@ func registerAdminCommands(
 
 	// !setorigin (!so) <player (optional)> <x> <y> <z>
 	// set players origin to given coords
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "setorigin",
 		Aliases:  aliases{"so", "setorg", "setpos"},
 		MinLevel: levelAdmin,
@@ -508,7 +508,7 @@ func registerAdminCommands(
 	 */
 
 	// !giveweapon (!gw) <player (optional)> <weapon>
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "giveweapon",
 		Aliases:  aliases{"gw"},
 		MinLevel: levelAdmin,
@@ -546,7 +546,7 @@ func registerAdminCommands(
 	})
 
 	// !takeweapons (!tw) <player (optional)>
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "takeweapons",
 		Aliases:  aliases{"tw"},
 		MinLevel: levelAdmin,
@@ -581,7 +581,7 @@ func registerAdminCommands(
 	})
 
 	// !switchteams (!st) <player (optional)>
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "switchteams",
 		Aliases:  aliases{"st"},
 		MinLevel: levelAdmin,
@@ -612,7 +612,7 @@ func registerAdminCommands(
 
 	// !hide (!hd) <player (optional)>
 	// hide yourself or a player
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "hide",
 		Aliases:  aliases{"hd", "hid", "invisible", "invis"},
 		MinLevel: levelAdmin,
@@ -641,7 +641,7 @@ func registerAdminCommands(
 	})
 
 	// !alert (!alr) <player> <message>
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "alert",
 		Aliases:  aliases{"alr"},
 		MinLevel: levelAdmin,
@@ -671,7 +671,7 @@ func registerAdminCommands(
 
 	// !kill (!kpl) <player>
 	// kill a player
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "killplayer",
 		Aliases:  aliases{"kpl", "kplayer", "killp"},
 		MinLevel: levelAdmin,
@@ -701,7 +701,7 @@ func registerAdminCommands(
 
 	// !setspectator (!spec) <player>
 	// set player to codcaster
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "setspectator",
 		Aliases:  aliases{"spec"},
 		MinLevel: levelAdmin,

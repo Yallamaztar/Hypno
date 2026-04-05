@@ -23,7 +23,7 @@ func registerOwnerCommands(
 ) {
 	// !gambling (!gmbl) <enable|disable|status>
 	// enable / disable gambling or view status of gambling
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "gambling",
 		Aliases:  aliases{"gmbl"},
 		MinLevel: levelOwner,
@@ -60,7 +60,7 @@ func registerOwnerCommands(
 
 	// !maxbet (!mb) <amount|status>
 	// set the max bet amount or view the status of max bet
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "maxbet",
 		Aliases:  aliases{"mb", "max"},
 		MinLevel: levelOwner,
@@ -105,7 +105,7 @@ func registerOwnerCommands(
 
 	// !printmoney (!print) <amount>
 	// print more money fuck the economy!
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "printmoney",
 		Aliases:  aliases{"print", "yidish", "shalom"},
 		MinLevel: levelOwner,
@@ -139,7 +139,7 @@ func registerOwnerCommands(
 
 	// !addowner <xuid>
 	// add a new owner
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "addowner",
 		Aliases:  aliases{"add"},
 		MinLevel: levelOwner,
@@ -159,7 +159,7 @@ func registerOwnerCommands(
 
 	// !removeowner <xuid>
 	// remove an owner
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "removeowner",
 		Aliases:  aliases{"remove"},
 		MinLevel: levelOwner,
@@ -179,7 +179,7 @@ func registerOwnerCommands(
 
 	// !addadmin <player> <xuid>
 	// add a new admin
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "addadmin",
 		Aliases:  aliases{"add"},
 		MinLevel: levelOwner,
@@ -199,7 +199,7 @@ func registerOwnerCommands(
 
 	// !removeadmin <xuid>
 	// remove an admin
-	reg.RegisterCommand(register.Command{
+	reg.RegisterCommand(&register.Command{
 		Name:     "removeadmin",
 		Aliases:  aliases{"remove"},
 		MinLevel: levelOwner,
