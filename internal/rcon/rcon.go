@@ -257,7 +257,7 @@ func (r *RCON) Tell(clientNum uint8, message string) error {
 	}
 
 	packet := r.buildPacket(
-		fmt.Sprintf("%d [^6%s^7]: %s",
+		fmt.Sprintf("tell %d [^6%s^7]: %s",
 			clientNum, r.config.Gambling.ConsoleName, message,
 		), true,
 	)
