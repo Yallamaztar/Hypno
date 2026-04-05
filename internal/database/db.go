@@ -49,6 +49,18 @@ const (
 	    FOREIGN KEY(player_id) REFERENCES players(id) ON DELETE CASCADE
 	);`
 
+	walletStatsSchema = `
+	CREATE TABLE IF NOT EXISTS wallet_stats (
+    	player_id INTEGER PRIMARY KEY,
+    	balance INTEGER DEFAULT 0,
+    	total_paid INTEGER DEFAULT 0,
+    	total_received INTEGER DEFAULT 0,
+    	deposit_count INTEGER DEFAULT 0,
+    	withdraw_count INTEGER DEFAULT 0,
+    	created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    	FOREIGN KEY(player_id) REFERENCES players(id) ON DELETE CASCADE
+	);`
+
 	gambleStatsSchema = `
 	CREATE TABLE IF NOT EXISTS global_stats (
     	id INTEGER PRIMARY KEY CHECK(id = 1),
@@ -78,6 +90,7 @@ func Migrate(db *sql.DB) error {
 		walletsSchema,
 		bankSchema,
 		playerStatsSchema,
+		walletStatsSchema,
 		gambleStatsSchema,
 	}
 
