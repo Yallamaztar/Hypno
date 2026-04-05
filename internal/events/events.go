@@ -47,86 +47,39 @@ func RunLogTailer(
 		case *playerEvent:
 			switch event.Command {
 			case joinCommand:
-				fmt.Println("GOT JOIN EVENT")
-				go func() {
-					reg.SetClientNum(event.xuid, uint8(event.cn))
-					exists, err := players.ExistsByXUID(event.xuid)
+				if err := ensurePlayer(event.xuid, uint8(event.cn), event.name, reg, rc, cfg, iw4m, players, wallet, walletStats, log); err != nil {
+					log.Errorln("Failed to ensure player: " + err.Error())
+					return
+				}
+
+				p, err := players.GetByXUID(event.xuid)
+				if err != nil {
+					log.Errorln("Failed to get player")
+					return
+				}
+
+				if cfg.IW4MAdmin.Enabled {
+					if p.IW4MID == nil {
+						log.Warnf("IW4MID is nil for %s", p.Name)
+						return
+					}
+					stats, err := iw4m.Stats(*p.IW4MID, index)
 					if err != nil {
-						log.Warnln("Failed to check if player exists")
+						log.Errorln("Failed to get IW4M-Admin stats")
 						return
 					}
 
-					if !exists {
-						var guid string
-						for i := 0; i < 5; i++ {
-							guid = rc.GUIDByClientNum(uint8(event.cn))
-							if guid == "" {
-								continue
-							} else {
-								break
-							}
-						}
+					reward := utils.CalcJoinReward(stats.TotalSecondsPlayed, stats.Kills, stats.Deaths, cfg.Economy.JoinReward)
+					wallet.Deposit(p.ID, reward)
+					walletStats.Deposit(p.ID, reward)
+					rc.Tell(uint8(event.cn), fmt.Sprintf("^7Spawning bonus: %s%d", cfg.Gambling.Currency, reward))
+				} else {
+					wallet.Deposit(p.ID, cfg.Economy.JoinReward)
+					walletStats.Deposit(p.ID, cfg.Economy.JoinReward)
+					rc.Tell(uint8(event.cn), fmt.Sprintf("^7Spawning bonus: %s%d", cfg.Gambling.Currency, cfg.Economy.JoinReward))
+				}
 
-						if guid == "" {
-							log.Errorln("Failed to get GUID for player")
-							return
-						}
-
-						log.Infoln("Player doesnt exists, creating profile")
-						id, err := players.Create(event.name, event.xuid, guid, 0, cfg, iw4m)
-						if err != nil {
-							log.Errorln("Failed to create player profile " + err.Error())
-							return
-						}
-
-						if err := wallet.Create(id, cfg.Economy.FirstTimeReward); err != nil {
-							log.Errorln("Failed to create wallet")
-							return
-						}
-
-						_ = walletStats.Init(id)
-						_ = walletStats.Deposit(id, cfg.Economy.FirstTimeReward)
-
-						log.Infof("Created wallet for %s (%s) | ID: %d\n", event.name, event.xuid, id)
-
-						rc.Tell(uint8(event.cn),
-							fmt.Sprintf(
-								"^7Created a wallet with ^6%s%d balance",
-								cfg.Gambling.Currency,
-								cfg.Economy.FirstTimeReward,
-							),
-						)
-					}
-
-					p, err := players.GetByXUID(event.xuid)
-					if err != nil {
-						log.Errorln("Failed to get player")
-						return
-					}
-
-					if cfg.IW4MAdmin.Enabled {
-						if p.IW4MID == nil {
-							log.Warnf("IW4MID is nil for %s", p.Name)
-							return
-						}
-						stats, err := iw4m.Stats(*p.IW4MID, index)
-						if err != nil {
-							log.Errorln("Failed to get IW4M-Admin stats")
-							return
-						}
-
-						reward := utils.CalcJoinReward(stats.TotalSecondsPlayed, stats.Kills, stats.Deaths, cfg.Economy.JoinReward)
-						wallet.Deposit(p.ID, reward)
-						walletStats.Deposit(p.ID, reward)
-						rc.Tell(uint8(event.cn), fmt.Sprintf("^7Spawning bonus: %s%d", cfg.Gambling.Currency, reward))
-					} else {
-						wallet.Deposit(p.ID, cfg.Economy.JoinReward)
-						walletStats.Deposit(p.ID, cfg.Economy.JoinReward)
-						rc.Tell(uint8(event.cn), fmt.Sprintf("^7Spawning bonus: %s%d", cfg.Gambling.Currency, cfg.Economy.JoinReward))
-					}
-
-					log.Infoln("Successfully processed join event for " + event.xuid)
-				}()
+				log.Infoln("Successfully processed join event for " + event.xuid)
 
 			case quitCommand:
 				xuid := event.xuid
@@ -147,6 +100,8 @@ func RunLogTailer(
 							args = parts[1:]
 						}
 
+						log.Infoln("got command", parts[0], "from", event.name+"with args: ", fmt.Sprint(args))
+
 						p, err := players.GetByXUID(event.xuid)
 						if err != nil {
 							return
@@ -156,15 +111,12 @@ func RunLogTailer(
 							return
 						}
 
-						go func() {
-							defer func() {
-								if r := recover(); r != nil {
-									log.Errorf("panic in command: %v", r)
-								}
-							}()
+						if err := ensurePlayer(event.xuid, uint8(event.cn), event.name, reg, rc, cfg, iw4m, players, wallet, walletStats, log); err != nil {
+							log.Errorln("Failed to ensure player: " + err.Error())
+							return
+						}
 
-							reg.Execute(uint8(event.cn), p.ID, event.name, event.xuid, p.Level, parts[0], args)
-						}()
+						reg.Execute(uint8(event.cn), p.ID, event.name, event.xuid, p.Level, parts[0], args)
 					}
 				}
 			}
@@ -172,6 +124,16 @@ func RunLogTailer(
 		case *killEvent:
 			if event.attackerXUID == event.victimXUID {
 				continue
+			}
+
+			if err := ensurePlayer(event.attackerXUID, uint8(event.attackerCN), event.attackerName, reg, rc, cfg, iw4m, players, wallet, walletStats, log); err != nil {
+				log.Errorln("Failed to ensure attacker: " + err.Error())
+				return
+			}
+
+			if err := ensurePlayer(event.victimXUID, uint8(event.victimCN), event.victimName, reg, rc, cfg, iw4m, players, wallet, walletStats, log); err != nil {
+				log.Errorln("Failed to ensure victim: " + err.Error())
+				return
 			}
 
 			go func() {
@@ -314,4 +276,72 @@ func RunLogTailer(
 			}
 		}
 	}
+}
+
+func ensurePlayer(
+	xuid string,
+	clientNum uint8,
+	name string,
+	reg *register.Register,
+	rc *rcon.RCON,
+	cfg *config.Config,
+	iw4m *iw4m.IW4MWrapper,
+	players *players.Service,
+	wallet *wallet.Service,
+	walletStats *ss.WalletStatsService,
+	log *logger.Logger,
+) error {
+	reg.SetClientNum(xuid, uint8(clientNum))
+	exists, err := players.ExistsByXUID(xuid)
+	if err != nil {
+		log.Warnln("Failed to check if player exists")
+		return err
+	}
+
+	if exists {
+		return nil
+	}
+
+	var guid string
+	for i := 0; i < 5; i++ {
+		guid = rc.GUIDByClientNum(uint8(clientNum))
+		if guid == "" {
+			continue
+		} else {
+			break
+		}
+	}
+
+	if guid == "" {
+		log.Errorln("Failed to get GUID for player")
+		return fmt.Errorf("failed to get GUID for player")
+	}
+
+	id, err := players.Create(name, xuid, guid, 0, cfg, iw4m)
+	if err != nil {
+		log.Errorln("Failed to create player profile " + err.Error())
+		return err
+	}
+
+	if err := wallet.Create(id, cfg.Economy.FirstTimeReward); err != nil {
+		log.Errorln("Failed to create wallet")
+		return err
+	}
+
+	if err := walletStats.Init(id); err != nil {
+		log.Errorln("walletStats.Init failed:", err)
+	}
+	if err := walletStats.Deposit(id, cfg.Economy.FirstTimeReward); err != nil {
+		log.Errorln("walletStats.Deposit failed:", err)
+	}
+
+	log.Infof("Created record for %s (%d) with balance %s%d", name, id, cfg.Gambling.Currency, cfg.Economy.FirstTimeReward)
+
+	return rc.Tell(uint8(clientNum),
+		fmt.Sprintf(
+			"^7Created a wallet with ^6%s%d balance",
+			cfg.Gambling.Currency,
+			cfg.Economy.FirstTimeReward,
+		),
+	)
 }
