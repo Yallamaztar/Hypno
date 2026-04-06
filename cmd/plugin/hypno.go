@@ -64,10 +64,10 @@ func main() {
 			log.Errorln("Discord webhook link cant be empty if discord config is enabled")
 			os.Exit(1)
 		}
-		wh = webhook.New(cfg.Discord.WebhookLink)
+		wh = webhook.New(cfg.Discord.WebhookLink, cfg)
 
 		if cfg.Discord.BotToken == "" {
-			log.Errorln("Discord bot toekn cant be empty if discord config is enabled")
+			log.Errorln("Discord bot token cant be empty if discord config is enabled")
 			os.Exit(1)
 		}
 
@@ -115,15 +115,11 @@ func main() {
 			continue
 		}
 
-		if err := rc.SetPrefixDvar("!"); err != nil {
-			serverLog.Fatalf("Failed to set prefix dvar: %v\n", err)
-		}
-
 		serverLog.Infoln("Successfully connected to RCON & GSC")
 
 		serverLog.Infoln("Registering client commands")
 		reg := register.New(cfg, rc, ps, serverLog)
-		commands.RegisterCommands(cfg, rc, reg, ps, ws, bs, ls, pStats, gStats, wStats, wh)
+		commands.RegisterCommands(cfg, rc, reg, ps, ws, bs, ls, pStats, gStats, wStats, serverLog, wh)
 
 		wg.Add(1)
 		go func(rc *rcon.RCON, log *logger.Logger) {
