@@ -42,9 +42,10 @@ type Economy struct {
 }
 
 type Levels struct {
-	User  string `yaml:"user"`
-	Admin string `yaml:"admin"`
-	Owner string `yaml:"owner"`
+	User      string `yaml:"user"`
+	Admin     string `yaml:"admin"`
+	Owner     string `yaml:"owner"`
+	Developer string `yaml:"developer"`
 }
 
 type Discord struct {
@@ -72,7 +73,7 @@ func Default() *Config {
 			Enabled:     true,
 			WinChance:   0.45,
 			Currency:    "$",
-			ConsoleName: "Hypno",
+			ConsoleName: "^6Hypno^7",
 		},
 
 		Economy: Economy{
@@ -81,15 +82,16 @@ func Default() *Config {
 			JoinReward:      500,
 			FirstTimeReward: 10_000,
 			DeathPenalty:    550,
-			MaxSteal:        0.10,  // 10% wallet balance
-			MaxGive:         0.005, // 0.5% bank balance
-			MaxBet:          0,     // 0 = no limit
+			MaxSteal:        0.05,         // 5% wallet balance
+			MaxGive:         0.0000000005, // 0.00000005% bank balance
+			MaxBet:          0,            // 0 = no limit
 		},
 
 		Levels: Levels{
-			User:  "user",
-			Admin: "admin",
-			Owner: "owner",
+			User:      "user",
+			Admin:     "admin",
+			Owner:     "owner",
+			Developer: "developer",
 		},
 	}
 }
