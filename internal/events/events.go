@@ -82,14 +82,10 @@ func RunLogTailer(
 				log.Infoln("Successfully processed join event for " + event.xuid)
 
 			case quitCommand:
-				xuid := event.xuid
-				go func() {
-					reg.RemoveClientNum(xuid)
-
-					statsMu.Lock()
-					delete(stats, xuid)
-					statsMu.Unlock()
-				}()
+				reg.RemoveClientNum(event.xuid)
+				statsMu.Lock()
+				delete(stats, event.xuid)
+				statsMu.Unlock()
 
 			case sayCommand:
 				if cmd, ok := strings.CutPrefix(event.message, cfg.Server[index].CommandPrefix); ok {
@@ -99,8 +95,6 @@ func RunLogTailer(
 						if len(parts) > 1 {
 							args = parts[1:]
 						}
-
-						log.Infoln("got command", parts[0], "from", event.name+"with args: ", fmt.Sprint(args))
 
 						p, err := players.GetByXUID(event.xuid)
 						if err != nil {
@@ -335,11 +329,9 @@ func ensurePlayer(
 		log.Errorln("walletStats.Deposit failed:", err)
 	}
 
-	log.Infof("Created record for %s (%d) with balance %s%d", name, id, cfg.Gambling.Currency, cfg.Economy.FirstTimeReward)
-
 	return rc.Tell(uint8(clientNum),
 		fmt.Sprintf(
-			"^7Created a wallet with ^6%s%d balance",
+			"^6Created ^7a wallet with ^6%s%d ^7balance",
 			cfg.Gambling.Currency,
 			cfg.Economy.FirstTimeReward,
 		),
