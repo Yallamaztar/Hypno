@@ -29,6 +29,7 @@ type Repository interface {
 	GetDiscordIDByID(id int) (string, error)
 	GetByDiscordID(id string) (*Player, error)
 	GetByLevel(level int) (*Player, error)
+	GetByPartial(partial string) (*Player, error)
 	ExistsByLevel(level int) (bool, error)
 	UpdateDiscordID(id int, discordID string) error
 	UpdateName(id int, name string) error
@@ -131,6 +132,20 @@ func (r *repository) GetByDiscordID(id string) (*Player, error) {
 func (r *repository) GetByLevel(level int) (*Player, error) {
 	var p Player
 	err := r.db.QueryRow(queries.GetPlayerByLevel, level).Scan(
+		&p.ID, &p.Name, &p.XUID, &p.GUID, &p.Level, &p.IW4MID, &p.DiscordID, &p.CreatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &p, nil
+}
+
+func (r *repository) GetByPartial(partial string) (*Player, error) {
+	var p Player
+	err := r.db.QueryRow(queries.GetPlayerByPartial, "%"+partial+"%").Scan(
 		&p.ID, &p.Name, &p.XUID, &p.GUID, &p.Level, &p.IW4MID, &p.DiscordID, &p.CreatedAt,
 	)
 	if err != nil {

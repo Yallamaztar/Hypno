@@ -76,6 +76,10 @@ func (s *Service) GetDiscordIDByID(id int) (string, error) {
 	return d, nil
 }
 
+func (s *Service) GetByPartial(partial string) (*Player, error) {
+	return s.repo.GetByPartial(partial)
+}
+
 func (s *Service) UpdateDiscordID(id int, discordID string) error {
 	if discordID == "" {
 		return fmt.Errorf("discordID cannot be empty")

@@ -166,6 +166,7 @@ func (r *Register) FindPlayerPartial(partial string) *PlayerInfo {
 			break
 		}
 
+		r.log.Errorf("Failed to get status (%d/3)\n", i)
 		time.Sleep(time.Duration(i+1) * 100 * time.Millisecond)
 	}
 
@@ -195,23 +196,23 @@ func (r *Register) FindPlayerPartial(partial string) *PlayerInfo {
 			}
 		}
 
-		// fallback lookup
-		player, err := r.players.GetByGUID(p.GUID)
-		if err == nil {
-			cn := r.rc.ClientNumByGUID(p.GUID)
-			if cn == -1 {
-				return nil
-			}
-
-			return &PlayerInfo{
-				Name:      player.Name,
-				GUID:      &player.GUID,
-				ClientNum: &cn,
-			}
-		} else if err != nil {
-			r.log.Errorln("Failed to get player by GUID")
-		}
 	}
 
-	return nil
+	player, err := r.players.GetByPartial(name)
+	if err != nil {
+		r.log.Errorln("Error occurred while fetching player by partial name")
+		return nil
+	}
+
+	cn := r.rc.ClientNumByGUID(player.GUID)
+	if cn == -1 {
+		r.log.Errorln("Error occurred while fetching client number by GUID")
+		return nil
+	}
+
+	return &PlayerInfo{
+		Name:      player.Name,
+		GUID:      &player.GUID,
+		ClientNum: &cn,
+	}
 }

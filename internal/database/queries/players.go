@@ -9,6 +9,7 @@ const (
 	GetPlayerByGUID      = `SELECT id, name, xuid, guid, level, client_id, discord_id, created_at FROM players WHERE guid = ?;`
 	GetPlayerByDiscordID = `SELECT id, name, xuid, guid, level, client_id, discord_id, created_at FROM players WHERE discord_id = ?;`
 	GetPlayerByLevel     = `SELECT id, name, xuid, guid, level, client_id, discord_id, created_at FROM players WHERE level = ? LIMIT 1;`
+	GetPlayerByPartial   = `SELECT id, name, xuid, guid, level, client_id, discord_id, created_at FROM players WHERE name LIKE ?;`
 
 	GetDiscordIDByID   = `SELECT discord_id FROM players WHERE id = ?;`
 	GetDiscordIDByXUID = `SELECT discord_id FROM players WHERE xuid = ?;`
