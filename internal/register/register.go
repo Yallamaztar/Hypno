@@ -8,6 +8,7 @@ import (
 	"plugin/internal/rcon"
 	"strings"
 	"sync"
+	"time"
 )
 
 type Handler func(
@@ -83,7 +84,6 @@ func (r *Register) Execute(
 	command string,
 	args []string,
 ) {
-	r.log.Infoln("Executing command:", command)
 	r.mu.RLock()
 	cmd, ok := r.commands[strings.ToLower(command)]
 	r.mu.RUnlock()
@@ -115,6 +115,7 @@ func (r *Register) Execute(
 		return
 	}
 
+	r.log.Infof("Executing command: %s for %s (%d)\n", command, playerName, playerID)
 	go cmd.Handler(clientNum, playerID, playerName, xuid, level, args)
 }
 
@@ -156,14 +157,27 @@ type PlayerInfo struct {
 func (r *Register) FindPlayerPartial(partial string) *PlayerInfo {
 	name := strings.ToLower(strings.TrimSpace(partial))
 
-	status, err := r.rc.Status()
-	if err != nil {
+	var status *rcon.Status
+	var err error
+
+	for i := 0; i < 3; i++ {
+		status, err = r.rc.Status()
+		if err == nil && status != nil {
+			break
+		}
+
+		time.Sleep(time.Duration(i+1) * 100 * time.Millisecond)
+	}
+
+	if status == nil {
+		r.log.Errorln("Failed to get status after 3 attempts")
 		return nil
 	}
 
 	for _, p := range status.Players {
 		target := strings.ToLower(p.Name)
 
+		// exact match
 		if target == name {
 			return &PlayerInfo{
 				Name:      p.Name,
@@ -172,6 +186,7 @@ func (r *Register) FindPlayerPartial(partial string) *PlayerInfo {
 			}
 		}
 
+		// partial match
 		if strings.Contains(target, name) {
 			return &PlayerInfo{
 				Name:      p.Name,
@@ -180,7 +195,8 @@ func (r *Register) FindPlayerPartial(partial string) *PlayerInfo {
 			}
 		}
 
-		p, err := r.players.GetByGUID(p.GUID)
+		// fallback lookup
+		player, err := r.players.GetByGUID(p.GUID)
 		if err == nil {
 			cn := r.rc.ClientNumByGUID(p.GUID)
 			if cn == -1 {
@@ -188,11 +204,14 @@ func (r *Register) FindPlayerPartial(partial string) *PlayerInfo {
 			}
 
 			return &PlayerInfo{
-				Name:      p.Name,
-				GUID:      &p.GUID,
+				Name:      player.Name,
+				GUID:      &player.GUID,
 				ClientNum: &cn,
 			}
+		} else if err != nil {
+			r.log.Errorln("Failed to get player by GUID")
 		}
 	}
+
 	return nil
 }

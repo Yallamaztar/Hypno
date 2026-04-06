@@ -93,7 +93,7 @@ func (r *RCON) TestConnection() error {
 			r.SetOutDvar("") // reset out dvar
 			return nil
 		}
-		time.Sleep(850 * time.Millisecond)
+		time.Sleep(250 * time.Millisecond)
 	}
 
 	return errors.New("HypnoPlugin not found on the server")
@@ -133,33 +133,48 @@ func (r *RCON) GetInfo() (*GetInfo, error) {
 }
 
 func (r *RCON) Status() (*Status, error) {
-	packet := r.buildPacket("status", true)
-	if err := r.sendPacket(packet); err != nil {
-		return nil, fmt.Errorf("failed to send status request: %w", err)
+	var lastErr error
+
+	for attempt := 1; attempt <= 3; attempt++ {
+		packet := r.buildPacket("status", true)
+		if err := r.sendPacket(packet); err != nil {
+			lastErr = fmt.Errorf("attempt %d: failed to send status request: %w", attempt, err)
+			time.Sleep(200 * time.Millisecond)
+			continue
+		}
+
+		lines, err := r.readResponse()
+		if err != nil {
+			lastErr = fmt.Errorf("attempt %d: failed to read status response: %w", attempt, err)
+			time.Sleep(200 * time.Millisecond)
+			continue
+		}
+
+		if len(lines) == 0 {
+			lastErr = fmt.Errorf("attempt %d: empty status response", attempt)
+			time.Sleep(200 * time.Millisecond)
+			continue
+		}
+
+		status := &Status{
+			Raw:         lines,
+			RetrievedAt: time.Now(),
+		}
+
+		status.Map = extractMapName(lines)
+
+		players, err := parsePlayerList(lines)
+		if err != nil {
+			lastErr = fmt.Errorf("attempt %d: failed to parse player list: %w", attempt, err)
+			time.Sleep(200 * time.Millisecond)
+			continue
+		}
+
+		status.Players = players
+		return status, nil
 	}
 
-	lines, err := r.readResponse()
-	if err != nil {
-		return nil, fmt.Errorf("failed to read status response: %w", err)
-	}
-
-	if len(lines) == 0 {
-		return nil, fmt.Errorf("empty status response")
-	}
-
-	status := &Status{
-		Raw:         lines,
-		RetrievedAt: time.Now(),
-	}
-
-	status.Map = extractMapName(lines)
-	players, err := parsePlayerList(lines)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse player list: %w", err)
-	}
-
-	status.Players = players
-	return status, nil
+	return nil, fmt.Errorf("status failed after 3 attempts: %w", lastErr)
 }
 
 func (r *RCON) GetStatus() (*GetStatus, error) {
@@ -211,35 +226,6 @@ func (r *RCON) SetOutDvar(value string) {
 	r.SetDvar("hypno_out", value)
 }
 
-func (r *RCON) SetPrefixDvar(value string) error {
-	for i := 0; i < 5; i++ {
-		r.SetDvar("hypno_prefix", value)
-
-		time.Sleep(250 * time.Millisecond)
-
-		d, err := r.GetDvar("hypno_prefix")
-		if err != nil {
-			r.log.Errorf("Failed to get prefix dvar (%d/5): %w", i+1, err)
-			continue
-		}
-
-		if d == nil {
-			r.log.Errorln("Failed to retrieve prefix dvar")
-			continue
-		}
-
-		if d.Value != value {
-			r.log.Errorln("Failed to set prefix dvar")
-			continue
-		}
-
-		r.log.Errorf("Attempt %d: mismatch (got %q, want %q)", i+1, d.Value, value)
-		return nil
-	}
-
-	return fmt.Errorf("Failed to set prefix dvar after 5 attempts")
-}
-
 func (r *RCON) GetDvar(dvar string) (*Dvar, error) {
 	if dvar == "" {
 		return nil, fmt.Errorf("dvar cannot be empty")
@@ -281,14 +267,11 @@ func (r *RCON) Tell(clientNum uint8, message string) error {
 		return errors.New("message cannot be empty")
 	}
 
-	packet := r.buildPacket(
-		fmt.Sprintf("tell %d [^6%s^7]: %s",
-			clientNum, r.config.Gambling.ConsoleName, message,
-		), true,
-	)
+	full := fmt.Sprintf("%s: %s", r.config.Gambling.ConsoleName, message)
+	packet := r.buildPacket(fmt.Sprintf("tell %d %s", clientNum, full), true)
 
 	if err := r.sendPacket(packet); err != nil {
-		return fmt.Errorf("failed to send getstatus request: %w", err)
+		return fmt.Errorf("failed to send tell request: %w", err)
 	}
 
 	return nil
@@ -299,7 +282,8 @@ func (r *RCON) Say(message string) error {
 		return errors.New("message cannot be empty")
 	}
 
-	packet := r.buildPacket(fmt.Sprintf("say [%s]: %s", r.config.Gambling.ConsoleName, message), true)
+	full := fmt.Sprintf("%s: %s", r.config.Gambling.ConsoleName, message)
+	packet := r.buildPacket(fmt.Sprintf("say %s", full), true)
 	return r.sendPacket(packet)
 }
 

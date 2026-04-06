@@ -31,6 +31,7 @@ func (r *RCON) sendPacket(packet []byte) error {
 		}
 		lastErr = fmt.Errorf("send attempt %d/%d failed: %w", attempt, defaultRetryCount, err)
 	}
+	r.log.Errorln("Failed to send packet after all retry attempts")
 	return lastErr
 }
 

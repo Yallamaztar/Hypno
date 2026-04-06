@@ -118,8 +118,8 @@ func tail(log *logger.Logger, path string, eventsCh chan<- event) error {
 		select {
 		case eventsCh <- ev:
 		case <-time.After(2 * time.Second):
-			log.Warnln("eventsCh blocked for 2s:", line)
-			eventsCh <- ev // still send (block now)
+			log.Warnln("Events channel blocked for 2s:", line)
+			eventsCh <- ev
 		}
 	}
 }
