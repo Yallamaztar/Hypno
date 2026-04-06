@@ -96,12 +96,20 @@ findPlayerByClientNum(n) {
 registerClientCommands() {
     registerCommand("plugin_ready", 0, ::on_ready);
 
-    registerCommand("freeze", 2, ::impl_freeze);
-    registerCommand("setspeed", 2, ::impl_setspeed);
-    registerCommand("swap", 2, ::impl_swap);
-    registerCommand("dropgun", 2, ::impl_dropgun);
-    registerCommand("teleport", 2, ::impl_teleport);
-    registerCommand("setorigin", 4, ::impl_setorigin);
+    registerCommand("freeze",       2, ::impl_freeze);
+    registerCommand("setspeed",     2, ::impl_setspeed);
+    registerCommand("swap",         2, ::impl_swap);
+    registerCommand("dropgun",      2, ::impl_dropgun);
+    registerCommand("teleport",     2, ::impl_teleport);
+    registerCommand("setorigin",    4, ::impl_setorigin);
+    registerCommand("giveweapon",   2, ::impl_giveweapon);
+    registerCommand("takeweapons",  1, ::impl_takeweapons);
+    registerCommand("switchteams",  1, ::impl_switchteams);
+    registerCommand("hide",         2, ::impl_hide);
+    registerCommand("alert",        2, ::impl_alert);
+    registerCommand("killplayer",   1, ::impl_killplayer);
+    registerCommand("setspectator", 1, ::impl_setspectator);
+
 }
 
 on_ready() {
@@ -112,7 +120,6 @@ impl_freeze(args) {
     origin = findPlayerByClientNum(args[0]);
     target = findPlayerByClientNum(args[1]);
 
-    // toggling on/off with persistent value
     if (!IsDefined(target.frozen)) {
         target.frozen = false;
     }
