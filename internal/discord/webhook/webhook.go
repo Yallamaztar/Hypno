@@ -3,7 +3,9 @@ package webhook
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"plugin/internal/config"
 	"plugin/internal/utils"
 	"time"
 )
@@ -43,12 +45,14 @@ type payload struct {
 
 type Webhook struct {
 	URL    string
+	cfg    *config.Config
 	client *http.Client
 }
 
-func New(url string) *Webhook {
+func New(url string, cfg *config.Config) *Webhook {
 	return &Webhook{
 		URL:    url,
+		cfg:    cfg,
 		client: &http.Client{Timeout: 2 * time.Second},
 	}
 }
@@ -87,10 +91,10 @@ func (w *Webhook) WinWebhook(player string, amount int) {
 			Author: &embedAuthor{
 				Name: "🎰  Casino — Win",
 			},
-			Color: 0x2ECC71,
+			Color: 0x00D084,
 			Fields: []embedField{
 				{Name: "Player", Value: "**" + player + "**", Inline: true},
-				{Name: "Payout", Value: "**" + utils.FormatMoney(amount) + "**", Inline: true},
+				{Name: "Payout", Value: "**" + w.cfg.Gambling.Currency + utils.FormatMoney(amount) + "**", Inline: true},
 				{Name: "Result", Value: "**WIN**", Inline: true},
 			},
 			Footer:    &embedFooter{Text: "Gambling bot  •  Win Log"},
@@ -107,10 +111,10 @@ func (w *Webhook) LossWebhook(player string, amount int) {
 			Author: &embedAuthor{
 				Name: "🎰  Casino — Loss",
 			},
-			Color: 0xE74C3C,
+			Color: 0xC0392B,
 			Fields: []embedField{
 				{Name: "Player", Value: "**" + player + "**", Inline: true},
-				{Name: "Amount Lost", Value: "**" + utils.FormatMoney(amount) + "**", Inline: true},
+				{Name: "Amount Lost", Value: "**" + w.cfg.Gambling.Currency + utils.FormatMoney(amount) + "**", Inline: true},
 				{Name: "Result", Value: "**LOSS**", Inline: true},
 			},
 			Footer:    &embedFooter{Text: "Gambling bot  •  Loss Log"},
@@ -127,13 +131,54 @@ func (w *Webhook) PayWebhook(sender, receiver string, amount int) {
 			Author: &embedAuthor{
 				Name: "🎰  Casino — Payment",
 			},
-			Color: 0x9B59B6,
+			Color: 0x3A86FF,
 			Fields: []embedField{
 				{Name: "Sender", Value: "**" + sender + "**", Inline: true},
 				{Name: "Receiver", Value: "**" + receiver + "**", Inline: true},
-				{Name: "Amount", Value: "**" + utils.FormatMoney(amount) + "**", Inline: true},
+				{Name: "Amount", Value: "**" + w.cfg.Gambling.Currency + utils.FormatMoney(amount) + "**", Inline: true},
 			},
-			Footer:    &embedFooter{Text: "Casino Server  •  Transfer Log"},
+			Footer:    &embedFooter{Text: "Gambling bot  •  Transfer Log"},
+			Timestamp: time.Now().UTC().Format(time.RFC3339),
+		},
+	}
+	w.send(p)
+}
+
+func (w *Webhook) MaxBetWebhook(player string, amount int) {
+	desc := "**Max bet has been disabled**"
+	color := 0xF4A261
+
+	if amount > 0 {
+		desc = fmt.Sprintf("**Max bet set to %s%s**", w.cfg.Gambling.Currency, utils.FormatMoney(amount))
+		color = 0xE9C46A
+	}
+
+	p := basePayload()
+	p.Embeds = []embed{
+		{
+			Author: &embedAuthor{
+				Name: "🎰  Casino — Max Bet",
+			},
+			Description: desc,
+			Color:       color,
+			Fields: []embedField{
+				{
+					Name:   "Player",
+					Value:  "**" + player + "**",
+					Inline: true,
+				},
+				{Name: "Status", Value: func() string {
+					if amount > 0 {
+						return "**🟢 ENABLED**"
+					}
+					return "**🔴 DISABLED**"
+				}(),
+					Inline: true,
+				},
+			},
+			Footer: &embedFooter{
+				Text: "Gambling bot  •  Max Bet Log",
+			},
 			Timestamp: time.Now().UTC().Format(time.RFC3339),
 		},
 	}
