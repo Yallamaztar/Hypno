@@ -1,5 +1,3 @@
-#define PLAYERNOTFOUND
-
 init() {
     level.hypno_cmds = [];
     SetDvar("hypno_enabled", 1);
@@ -221,4 +219,14 @@ impl_alert(args) {
     alert.duration   = 7.5;
     target.startmessagenotifyqueue[self.startmessagenotifyqueue.size] = alert;
     target notify("received award");
+}
+
+impl_killplayer(args) {
+    target = findPlayerByClientNum(args[0]);
+    target Kill();
+}
+
+impl_setspectator(args) {
+    target = findPlayerByClientNum(args[0]);
+    target [[level.spectator]]();
 }
