@@ -49,6 +49,10 @@ func Gamble(
 		return nil, fmt.Errorf("You ^6dont ^7have enough money (missing %s%d)", cfg.Gambling.Currency, (amount - balance))
 	}
 
+	if cfg.Economy.MaxBet != 0 && amount > cfg.Economy.MaxBet {
+		return nil, fmt.Errorf("Amount exceeds maximum bet limit of %s%d", cfg.Gambling.Currency, cfg.Economy.MaxBet)
+	}
+
 	if didWin(cfg.Gambling.WinChance) {
 		// withdraw winnings from bank
 		if err := bank.Withdraw(amount); err != nil {
