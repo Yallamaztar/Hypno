@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"plugin/internal/bank"
 	"plugin/internal/config"
+	"plugin/internal/logger"
 	"plugin/internal/players"
 	"plugin/internal/rcon"
 	"plugin/internal/register"
@@ -20,6 +21,8 @@ func registerAdminCommands(
 	players *players.Service,
 	wallet *wallet.Service,
 	bank *bank.Service,
+
+	log *logger.Logger,
 ) {
 	// !freeze (!fz) <player>
 	// lock controls on a player
@@ -43,7 +46,7 @@ func registerAdminCommands(
 			}
 
 			if cn == -1 {
-				rc.Tell(clientNum, "player ^6couldnt ^7be found")
+				rc.Tell(clientNum, "^6"+rc.NameByClientNum(cn)+" ^7couldnt be found")
 				return
 			}
 
@@ -73,7 +76,7 @@ func registerAdminCommands(
 			}
 
 			if cn == -1 {
-				rc.Tell(clientNum, "Player ^6couldnt ^7be found")
+				rc.Tell(clientNum, "^6"+rc.NameByClientNum(cn)+" ^7couldnt be found")
 				return
 			}
 
@@ -150,7 +153,7 @@ func registerAdminCommands(
 			}
 
 			if cn == -1 {
-				rc.Tell(clientNum, "player ^6couldnt ^7be found")
+				rc.Tell(clientNum, "^6"+rc.NameByClientNum(cn)+" ^7couldnt be found")
 				return
 			}
 
@@ -293,7 +296,7 @@ func registerAdminCommands(
 			if level == levelAdmin {
 				max := int(float64(bal) * cfg.Economy.MaxSteal)
 				if amount > max {
-					rc.Tell(clientNum, fmt.Sprintf("^1You can only steal up to ^6%s%s^7", cfg.Gambling.Currency, utils.FormatMoney(max)))
+					rc.Tell(clientNum, fmt.Sprintf("You can only steal ^6%s%s^7 from %s", cfg.Gambling.Currency, utils.FormatMoney(max), target.Name))
 					return
 				}
 			}
@@ -307,6 +310,8 @@ func registerAdminCommands(
 				rc.Tell(clientNum, err.Error())
 				return
 			}
+
+			log.Infof("%s (%d) stole %s%s from %s (%d)\n", playerName, playerID, cfg.Gambling.Currency, utils.FormatMoney(amount), target.Name, target.ID)
 			rc.Tell(clientNum, fmt.Sprintf("Took ^6%s%s ^7from %s", cfg.Gambling.Currency, utils.FormatMoney(amount), target.Name))
 			rc.Tell(uint8(*t.ClientNum), fmt.Sprintf("%s took ^6%s%s ^7from you LOL", playerName, cfg.Gambling.Currency, utils.FormatMoney(amount)))
 		},
@@ -323,24 +328,28 @@ func registerAdminCommands(
 		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
 			args, err := parseArgs(args)
 			if err != nil {
+				log.Errorln("Failed to parse args for !givemoney command")
 				rc.Tell(clientNum, err.Error())
 				return
 			}
 
 			t := reg.FindPlayerPartial(args[0])
 			if t == nil {
+				log.Errorln("Failed to find player")
 				rc.Tell(clientNum, args[0]+" not found")
 				return
 			}
 
 			target, err := players.GetByGUID(*t.GUID)
 			if err != nil {
+				log.Errorln("Failed to get player by GUID")
 				rc.Tell(clientNum, t.Name+" not found")
 				return
 			}
 
 			amount := utils.ParseAmount(args[1])
 			if amount <= 0 {
+				log.Errorln("Failed to parse amount for !givemoney command")
 				rc.Tell(clientNum, "Invalid amount")
 				return
 			}
@@ -348,6 +357,7 @@ func registerAdminCommands(
 			if target.Level == levelAdmin {
 				bankbal, err := bank.GetBalance()
 				if err != nil {
+					log.Errorln("Failed to get bank balance")
 					rc.Tell(clientNum, "Couldnt get bank balance")
 					return
 				}
@@ -360,15 +370,18 @@ func registerAdminCommands(
 			}
 
 			if err := bank.Withdraw(int(amount)); err != nil {
+				log.Errorln("Failed to withdraw money from the bank")
 				rc.Tell(clientNum, "Couldnt get money from the bank")
 				return
 			}
 
 			if err := wallet.Deposit(target.ID, int(amount)); err != nil {
+				log.Errorln("Failed to deposit money into player's wallet")
 				rc.Tell(clientNum, "Transfer failed")
 				return
 			}
 
+			log.Infof("%s (%d) gave %s%s to %s (%d)\n", playerName, playerID, cfg.Gambling.Currency, utils.FormatMoney(int(amount)), target.Name, target.ID)
 			rc.Tell(clientNum, fmt.Sprintf("Gave %s ^6%s%s", target.Name, cfg.Gambling.Currency, utils.FormatMoney(int(amount))))
 			rc.Tell(uint8(*t.ClientNum), fmt.Sprintf("%s gave you ^6%s%s", playerName, cfg.Gambling.Currency, utils.FormatMoney(int(amount))))
 		},
@@ -424,6 +437,7 @@ func registerAdminCommands(
 				}
 			}
 
+			log.Infof("%s (%d) gave %s%s to %d players\n", playerName, playerID, cfg.Gambling.Currency, utils.FormatMoney(int(amount)), len(status.Players))
 			rc.Say(fmt.Sprintf("%s gave ^6%s%s to everyone", playerName, cfg.Gambling.Currency, utils.FormatMoney(int(amount))))
 		},
 	})
@@ -450,10 +464,11 @@ func registerAdminCommands(
 			}
 
 			if cn == -1 {
-				rc.Tell(clientNum, "player ^6couldnt ^7be found")
+				rc.Tell(clientNum, "^6"+rc.NameByClientNum(cn)+" ^7couldnt be found")
 				return
 			}
 
+			rc.Tell(clientNum, "Setting origin to "+args[1]+", "+args[2]+", "+args[3])
 			rc.SetInDvar(fmt.Sprintf("setorigin %d %s %s %s", cn, args[1], args[2], args[3]))
 		},
 	})
@@ -486,7 +501,7 @@ func registerAdminCommands(
 			}
 
 			if cn == -1 {
-				rc.Tell(clientNum, "player ^6couldnt ^7be found")
+				rc.Tell(clientNum, "^6"+rc.NameByClientNum(cn)+" ^7couldnt be found")
 				return
 			}
 
@@ -524,7 +539,7 @@ func registerAdminCommands(
 			}
 
 			if cn == -1 {
-				rc.Tell(clientNum, "player ^6couldnt ^7be found")
+				rc.Tell(clientNum, "^6"+rc.NameByClientNum(cn)+" ^7couldnt be found")
 				return
 			}
 
@@ -559,7 +574,7 @@ func registerAdminCommands(
 			}
 
 			if cn == -1 {
-				rc.Tell(clientNum, "player ^6couldnt ^7be found")
+				rc.Tell(clientNum, "^6"+rc.NameByClientNum(cn)+" ^7couldnt be found")
 				return
 			}
 
@@ -590,7 +605,7 @@ func registerAdminCommands(
 			}
 
 			if cn == -1 {
-				rc.Tell(clientNum, "player ^6couldnt ^7be found")
+				rc.Tell(clientNum, "^6"+rc.NameByClientNum(cn)+" ^7couldnt be found")
 				return
 			}
 
@@ -619,7 +634,7 @@ func registerAdminCommands(
 			}
 
 			if cn == -1 {
-				rc.Tell(clientNum, "player ^6couldnt ^7be found")
+				rc.Tell(clientNum, "^6"+rc.NameByClientNum(cn)+" ^7couldnt be found")
 				return
 			}
 
@@ -649,11 +664,12 @@ func registerAdminCommands(
 			}
 
 			if cn == -1 {
-				rc.Tell(clientNum, "player ^6couldnt ^7be found")
+				rc.Tell(clientNum, "^6"+rc.NameByClientNum(cn)+" ^7couldnt be found")
 				return
 			}
 
-			rc.SetInDvar(fmt.Sprintf("killplayer %d %d", clientNum, cn))
+			rc.Tell(clientNum, "Killing player ^6"+rc.NameByClientNum(cn))
+			rc.SetInDvar(fmt.Sprintf("killplayer %d", cn))
 		},
 	})
 
@@ -679,12 +695,12 @@ func registerAdminCommands(
 			}
 
 			if cn == -1 {
-				rc.Tell(clientNum, "player ^6couldnt ^7be found")
+				rc.Tell(clientNum, "^6"+rc.NameByClientNum(cn)+" ^7couldnt be found")
 				return
 			}
 
-			rc.Tell(clientNum, "Setting player to spectator")
-			rc.SetInDvar(fmt.Sprintf("setspectator %d %d", clientNum, cn))
+			rc.Tell(clientNum, "Setting ^6"+rc.NameByClientNum(cn)+" ^7to spectator")
+			rc.SetInDvar(fmt.Sprintf("setspectator %d", cn))
 		},
 	})
 }

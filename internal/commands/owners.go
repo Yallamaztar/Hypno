@@ -3,6 +3,8 @@ package commands
 import (
 	"fmt"
 	"plugin/internal/config"
+	"plugin/internal/discord/webhook"
+	"plugin/internal/logger"
 	"plugin/internal/players"
 	"plugin/internal/rcon"
 	"plugin/internal/register"
@@ -15,6 +17,8 @@ func registerOwnerCommands(
 	rc *rcon.RCON,
 	reg *register.Register,
 	players *players.Service,
+	log *logger.Logger,
+	webhook *webhook.Webhook,
 ) {
 	// !gambling (!gmbl) <enable|disable|status>
 	// enable / disable gambling or view status of gambling
@@ -50,6 +54,8 @@ func registerOwnerCommands(
 			default:
 				rc.Tell(clientNum, "Usage: ^6!gambling ^7(!gmbl) <enable|disable|status>")
 			}
+
+			log.Infof("%s (%d) changed gambling status to %t\n", playerName, playerID, cfg.Gambling.Enabled)
 		},
 	})
 
@@ -95,6 +101,9 @@ func registerOwnerCommands(
 			} else {
 				rc.Say(fmt.Sprintf("Max bet has been set to ^6 %s%d", cfg.Gambling.Currency, amount))
 			}
+
+			log.Infof("%s (%d) set max bet to %s%d\n", playerName, playerID, cfg.Gambling.Currency, amount)
+			webhook.MaxBetWebhook(playerName, int(amount))
 		},
 	})
 
@@ -105,7 +114,7 @@ func registerOwnerCommands(
 		Aliases:  aliases{"add"},
 		MinLevel: levelOwner,
 		MinArgs:  1,
-		Help:     "!addowner <xuid>",
+		Help:     "Usage: ^6!addowner^7 <xuid>",
 		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
 			target, err := players.GetByXUID(args[0])
 			if err != nil {
@@ -113,7 +122,18 @@ func registerOwnerCommands(
 				return
 			}
 
-			players.UpdateLevel(target.ID, levelOwner)
+			if target.Level >= levelOwner {
+				rc.Tell(clientNum, target.Name+" is already an owner")
+				return
+			}
+
+			if err := players.UpdateLevel(target.ID, levelOwner); err != nil {
+				log.Errorln(err)
+				rc.Tell(clientNum, "Failed to update player level")
+				return
+			}
+
+			log.Infof("%s (%d) promoted %s (%d) to owner\n", playerName, playerID, target.Name, target.ID)
 			rc.Tell(clientNum, target.Name+" level set to owner")
 		},
 	})
@@ -125,7 +145,7 @@ func registerOwnerCommands(
 		Aliases:  aliases{"remove"},
 		MinLevel: levelOwner,
 		MinArgs:  1,
-		Help:     "!removeowner <xuid>",
+		Help:     "Usage: ^6!removeowner^7 <xuid>",
 		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
 			target, err := players.GetByXUID(args[0])
 			if err != nil {
@@ -133,19 +153,30 @@ func registerOwnerCommands(
 				return
 			}
 
-			players.UpdateLevel(target.ID, levelUser)
+			if target.Level <= levelAdmin {
+				rc.Tell(clientNum, target.Name+" is not an owner")
+				return
+			}
+
+			if err := players.UpdateLevel(target.ID, levelUser); err != nil {
+				log.Errorln(err)
+				rc.Tell(clientNum, "Failed to update player level")
+				return
+			}
+
+			log.Infof("%s (%d) demoted %s (%d) to user\n", playerName, playerID, target.Name, target.ID)
 			rc.Tell(clientNum, target.Name+" level set to user")
 		},
 	})
 
-	// !addadmin <player> <xuid>
+	// !addadmin <xuid>
 	// add a new admin
 	reg.RegisterCommand(&register.Command{
 		Name:     "addadmin",
 		Aliases:  aliases{"add"},
 		MinLevel: levelOwner,
 		MinArgs:  1,
-		Help:     "!addadmin <xuid>",
+		Help:     "Usage: ^6!addadmin^7 <xuid>",
 		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
 			target, err := players.GetByXUID(args[0])
 			if err != nil {
@@ -153,7 +184,18 @@ func registerOwnerCommands(
 				return
 			}
 
-			players.UpdateLevel(target.ID, levelAdmin)
+			if target.Level >= levelAdmin {
+				rc.Tell(clientNum, target.Name+" is already an admin")
+				return
+			}
+
+			if err := players.UpdateLevel(target.ID, levelAdmin); err != nil {
+				log.Errorln(err)
+				rc.Tell(clientNum, "Failed to update player level")
+				return
+			}
+
+			log.Infof("%s (%d) promoted %s (%d) to admin\n", playerName, playerID, target.Name, target.ID)
 			rc.Tell(clientNum, target.Name+" level set to admin")
 		},
 	})
@@ -165,7 +207,7 @@ func registerOwnerCommands(
 		Aliases:  aliases{"remove"},
 		MinLevel: levelOwner,
 		MinArgs:  1,
-		Help:     "!removeadmin <xuid>",
+		Help:     "Usage: ^6!removeadmin^7 <xuid>",
 		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
 			target, err := players.GetByXUID(args[0])
 			if err != nil {
@@ -173,7 +215,18 @@ func registerOwnerCommands(
 				return
 			}
 
-			players.UpdateLevel(target.ID, levelUser)
+			if target.Level <= levelAdmin {
+				rc.Tell(clientNum, target.Name+" is not an admin")
+				return
+			}
+
+			if err := players.UpdateLevel(target.ID, levelUser); err != nil {
+				log.Errorln(err)
+				rc.Tell(clientNum, "Failed to update player level")
+				return
+			}
+
+			log.Infof("%s (%d) demoted %s (%d) to user\n", playerName, playerID, target.Name, target.ID)
 			rc.Tell(clientNum, target.Name+" level set to user")
 		},
 	})

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"plugin/internal/bank"
 	"plugin/internal/config"
+	"plugin/internal/logger"
 	"plugin/internal/players"
 	"plugin/internal/rcon"
 	"plugin/internal/register"
@@ -11,6 +12,7 @@ import (
 	"plugin/internal/wallet"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func registerDeveloperCommands(
@@ -21,13 +23,14 @@ func registerDeveloperCommands(
 	players *players.Service,
 	wallet *wallet.Service,
 	bank *bank.Service,
+	log *logger.Logger,
 ) {
 	// !printmoney (!print) <amount>
 	// print more money fuck the economy!
 	reg.RegisterCommand(&register.Command{
 		Name:     "printmoney",
 		Aliases:  aliases{"print", "yidish", "shalom"},
-		MinLevel: levelOwner,
+		MinLevel: levelDeveloper,
 		MinArgs:  1,
 		Help:     "Usage: ^6!printmoney ^7<amount>",
 		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
@@ -48,6 +51,7 @@ func registerDeveloperCommands(
 					return
 				}
 
+				log.Infof("%s (%d) printed %s%s to the bank\n", playerName, playerID, cfg.Gambling.Currency, utils.FormatMoney(int(amount)))
 				rc.Tell(clientNum, fmt.Sprintf("Printed ^6%s%s^7 to the bank", cfg.Gambling.Currency, utils.FormatMoney(int(amount))))
 				return
 			}
@@ -56,6 +60,8 @@ func registerDeveloperCommands(
 				rc.Tell(clientNum, "Failed to print money")
 				return
 			}
+
+			log.Infof("%s (%d) printed %s%s to the wallet\n", playerName, playerID, cfg.Gambling.Currency, utils.FormatMoney(int(amount)))
 			rc.Tell(clientNum, fmt.Sprintf("Printed ^6%s%s^7 to wallet", cfg.Gambling.Currency, utils.FormatMoney(int(amount))))
 		},
 	})
@@ -65,7 +71,7 @@ func registerDeveloperCommands(
 	reg.RegisterCommand(&register.Command{
 		Name:     "xuid",
 		Aliases:  aliases{"info"},
-		MinLevel: levelAdmin,
+		MinLevel: levelDeveloper,
 		MinArgs:  1,
 		Help:     "Usage: ^6!xuid ^7<player>",
 		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
@@ -111,6 +117,18 @@ func registerDeveloperCommands(
 		MinArgs:  0,
 		Help:     "Usage: ^6!crash",
 		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
+			rc.Say("Crashing the plugin in 5 seconds")
+			log.Warnln("Crashing the plugin on purpose in 5 seconds")
+
+			for i := 4; i >= 1; i-- {
+				time.Sleep(time.Second)
+				rc.Say(fmt.Sprintf("%d", i))
+			}
+			time.Sleep(time.Second)
+
+			rc.Say("Crashing plugin, good bye!")
+			log.Warnln("Crashing plugin, good bye!")
+
 			panic("Crashing the plugin on purpose")
 		},
 	})
@@ -169,6 +187,45 @@ func registerDeveloperCommands(
 
 				rc.Tell(clientNum, fmt.Sprintf("GUID: ^6%s", guid))
 			}
+		},
+	})
+
+	// !lookup (!find) <name>
+	// look up players xuid from db
+	reg.RegisterCommand(&register.Command{
+		Name:     "lookup",
+		Aliases:  aliases{"find"},
+		MinLevel: levelDeveloper,
+		MinArgs:  1,
+		Help:     "Usage: ^6!lookup^7 <name>",
+		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
+			target, err := players.GetByGUID(*reg.FindPlayerPartial(strings.Join(args, " ")).GUID)
+			if err != nil {
+				rc.Tell(clientNum, "Player couldnt be found ("+args[0]+")")
+				return
+			}
+
+			rc.Tell(clientNum, target.Name+" has XUID: "+target.XUID)
+		},
+	})
+
+	// !discordinvite (!invite) <link>
+	// change the discord invite in config
+	reg.RegisterCommand(&register.Command{
+		Name:     "discordinvite",
+		Aliases:  aliases{"invite"},
+		MinLevel: levelDeveloper,
+		MinArgs:  1,
+		Help:     "Usage: ^6!discordinvite ^7<link>",
+		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
+			cfg.Discord.InviteLink = args[0]
+			if err := cfg.Save(); err != nil {
+				rc.Tell(clientNum, "Failed to save config")
+				return
+			}
+
+			log.Infof("%s (%d) updated the discord invite link to %s\n", playerName, playerID, args[0])
+			rc.Tell(clientNum, "Discord invite updated")
 		},
 	})
 }

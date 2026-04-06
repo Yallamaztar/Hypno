@@ -6,6 +6,7 @@ import (
 	"plugin/internal/config"
 	"plugin/internal/discord/webhook"
 	"plugin/internal/links"
+	"plugin/internal/logger"
 	"plugin/internal/players"
 	"plugin/internal/rcon"
 	"plugin/internal/register"
@@ -23,6 +24,21 @@ const (
 	levelDeveloper
 )
 
+func LevelToString(level int) string {
+	switch level {
+	case levelUser:
+		return "User"
+	case levelAdmin:
+		return "Admin"
+	case levelOwner:
+		return "Owner"
+	case levelDeveloper:
+		return "Developer"
+	default:
+		return "Unknown"
+	}
+}
+
 type aliases []string
 
 func RegisterCommands(
@@ -39,12 +55,13 @@ func RegisterCommands(
 	gambleStats *stats.GamblingStatsService,
 	walletStats *stats.WalletStatsService,
 
+	log *logger.Logger,
 	webhook *webhook.Webhook,
 ) {
-	registerDeveloperCommands(cfg, rc, reg, players, wallet, bank)
-	registerOwnerCommands(cfg, rc, reg, players)
-	registerAdminCommands(cfg, rc, reg, players, wallet, bank)
-	registerClientCommands(cfg, rc, reg, players, wallet, bank, links, playerStats, gambleStats, walletStats, webhook)
+	registerDeveloperCommands(cfg, rc, reg, players, wallet, bank, log)
+	registerOwnerCommands(cfg, rc, reg, players, log, webhook)
+	registerAdminCommands(cfg, rc, reg, players, wallet, bank, log)
+	registerClientCommands(cfg, rc, reg, players, wallet, bank, links, playerStats, gambleStats, walletStats, log, webhook)
 }
 
 // resolveClientNum finds the client number of given target in args, if none found: return origins clientNum
