@@ -1,6 +1,6 @@
 # Hypno - Plugin Made For Plutonium T6 (WIP)
 
-[Hypno Banner](.github/HypnoBanner.png)
+![Hypno Banner](.github/hypno.png)
 
 ## Abouts
 **Hypno** Aka **Hypnosis Plugin** is a server-side plugin made for **[Plutonium T6](https://plutonium.pw/)** dedicated servers. It adds custom chat commands, economy, gambling, and shop systems, along with **[IW4M-Admin](https://github.com/RaidMax/IW4M-Admin)** and Discord integrations.
