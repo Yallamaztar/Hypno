@@ -267,14 +267,9 @@ func (r *RCON) Tell(clientNum uint8, message string) error {
 		return errors.New("message cannot be empty")
 	}
 
-	full := fmt.Sprintf("%s: %s", r.config.Gambling.ConsoleName, message)
-	packet := r.buildPacket(fmt.Sprintf("tell %d %s", clientNum, full), true)
-
-	if err := r.sendPacket(packet); err != nil {
-		return fmt.Errorf("failed to send tell request: %w", err)
-	}
-
-	return nil
+	full := fmt.Sprintf("[%s]: %s", r.config.Gambling.ConsoleName, message)
+	packet := r.buildPacket(fmt.Sprintf(`tell %d "%s"`, clientNum, full), true)
+	return r.sendWithRetry(packet)
 }
 
 func (r *RCON) Say(message string) error {
@@ -282,9 +277,9 @@ func (r *RCON) Say(message string) error {
 		return errors.New("message cannot be empty")
 	}
 
-	full := fmt.Sprintf("%s: %s", r.config.Gambling.ConsoleName, message)
+	full := fmt.Sprintf("[%s]: %s", r.config.Gambling.ConsoleName, message)
 	packet := r.buildPacket(fmt.Sprintf("say %s", full), true)
-	return r.sendPacket(packet)
+	return r.sendWithRetry(packet)
 }
 
 func (r *RCON) SayRaw(message string) error {

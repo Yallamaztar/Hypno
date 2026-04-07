@@ -35,6 +35,21 @@ func (r *RCON) sendPacket(packet []byte) error {
 	return lastErr
 }
 
+func (r *RCON) sendWithRetry(packet []byte) error {
+	var lastErr error
+
+	for i := 0; i < 3; i++ {
+		err := r.sendPacket(packet)
+		if err == nil {
+			return nil
+		}
+		lastErr = err
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	return lastErr
+}
+
 func (r *RCON) readResponse() ([]string, error) {
 	var buf bytes.Buffer
 	deadline := time.Now().Add(defaultReadTimeout)
