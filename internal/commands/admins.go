@@ -281,7 +281,7 @@ func registerAdminCommands(
 				return
 			}
 
-			bal, err := wallet.GetBalance(target.ID)
+			bal, err := wallet.Balance(target.ID)
 			if err != nil {
 				rc.Tell(clientNum, "couldnt get "+t.Name+"'s wallet")
 				return
@@ -326,6 +326,11 @@ func registerAdminCommands(
 		MinArgs:  2,
 		Help:     "Usage: ^6!givemoney ^7<player> <amount>",
 		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
+			if !cfg.Gambling.Enabled {
+				rc.Tell(clientNum, "All gambling features are ^1disabled")
+				return
+			}
+
 			args, err := parseArgs(args)
 			if err != nil {
 				log.Errorln("Failed to parse args for !givemoney command")
@@ -355,7 +360,7 @@ func registerAdminCommands(
 			}
 
 			if target.Level == levelAdmin {
-				bankbal, err := bank.GetBalance()
+				bankbal, err := bank.Balance()
 				if err != nil {
 					log.Errorln("Failed to get bank balance")
 					rc.Tell(clientNum, "Couldnt get bank balance")
@@ -364,7 +369,7 @@ func registerAdminCommands(
 
 				max := int(float64(bankbal) * cfg.Economy.MaxGive)
 				if int(amount) > max {
-					rc.Tell(clientNum, fmt.Sprintf("^1You can only give up to ^6%s%s^7", cfg.Gambling.Currency, utils.FormatMoney(max)))
+					rc.Tell(clientNum, fmt.Sprintf("You can ^1only^7 give up to ^6%s%s^7", cfg.Gambling.Currency, utils.FormatMoney(max)))
 					return
 				}
 			}
@@ -415,7 +420,7 @@ func registerAdminCommands(
 					continue
 				}
 
-				bal, err := bank.GetBalance()
+				bal, err := bank.Balance()
 				if err != nil {
 					rc.Tell(clientNum, "couldnt get bank balance")
 					continue

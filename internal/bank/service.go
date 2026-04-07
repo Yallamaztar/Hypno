@@ -11,7 +11,7 @@ func New(repo Repository) *Service {
 }
 
 func (s *Service) Init(initialBalance int) error {
-	balance, err := s.repo.GetBalance()
+	balance, err := s.repo.Balance()
 	if err != nil {
 		return err
 	}
@@ -23,8 +23,8 @@ func (s *Service) Init(initialBalance int) error {
 	return s.repo.Create(initialBalance)
 }
 
-func (s *Service) GetBalance() (int, error) {
-	return s.repo.GetBalance()
+func (s *Service) Balance() (int, error) {
+	return s.repo.Balance()
 }
 
 func (s *Service) SetBalance(amount int) error {

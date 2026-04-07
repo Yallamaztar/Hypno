@@ -188,7 +188,7 @@ func handleGamble(
 		return
 	}
 
-	bal, err := ws.GetBalance(player.ID)
+	bal, err := ws.Balance(player.ID)
 	if err != nil {
 		session.InteractionResponseEdit(interaction.Interaction, &discordgo.WebhookEdit{
 			Content: strPtr("Couldnt get your wallet balance"),
@@ -212,9 +212,15 @@ func handleGamble(
 		return
 	}
 
-	session.InteractionResponseEdit(interaction.Interaction, &discordgo.WebhookEdit{
-		Content: strPtr("🎰 " + res.Message),
-	})
+	if res.Won {
+		session.InteractionResponseEdit(interaction.Interaction, &discordgo.WebhookEdit{
+			Content: strPtr(fmt.Sprintf("🎰 You just won %s%d!", cfg.Gambling.Currency, res.Amount)),
+		})
+	} else {
+		session.InteractionResponseEdit(interaction.Interaction, &discordgo.WebhookEdit{
+			Content: strPtr(fmt.Sprintf("🎰 You just lost %s%d!", cfg.Gambling.Currency, res.Amount)),
+		})
+	}
 }
 
 func handlePay(
@@ -243,7 +249,7 @@ func handlePay(
 		return
 	}
 
-	bal, err := ws.GetBalance(sender.ID)
+	bal, err := ws.Balance(sender.ID)
 	if err != nil {
 		session.InteractionResponseEdit(interaction.Interaction, &discordgo.WebhookEdit{
 			Content: strPtr("Couldnt get your wallet balance"),
@@ -343,7 +349,7 @@ func handleBalance(
 		return
 	}
 
-	bal, err := ws.GetBalance(player.ID)
+	bal, err := ws.Balance(player.ID)
 	if err != nil {
 		session.InteractionResponseEdit(interaction.Interaction, &discordgo.WebhookEdit{
 			Content: strPtr("Could not retrieve balance"),
@@ -433,7 +439,13 @@ func handleLink(
 		return
 	}
 
-	_ = ls.DeleteByCode(code)
+	if err = ls.DeleteByCode(code); err != nil {
+		session.InteractionResponseEdit(interaction.Interaction, &discordgo.WebhookEdit{
+			Content: strPtr("Failed to delete link code"),
+		})
+		return
+	}
+
 	_ = ls.DeleteByID(player.ID)
 
 	session.InteractionResponseEdit(interaction.Interaction, &discordgo.WebhookEdit{

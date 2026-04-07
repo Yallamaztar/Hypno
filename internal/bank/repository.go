@@ -8,7 +8,7 @@ import (
 
 type Repository interface {
 	Create(initialBalance int) error
-	GetBalance() (int, error)
+	Balance() (int, error)
 	SetBalance(amount int) error
 	Deposit(amount int) error
 	Withdraw(amount int) error
@@ -27,7 +27,7 @@ func (r *repository) Create(initialBalance int) error {
 	return err
 }
 
-func (r *repository) GetBalance() (int, error) {
+func (r *repository) Balance() (int, error) {
 	var balance int
 	err := r.db.QueryRow(queries.GetBankBalance).Scan(&balance)
 	if err != nil {

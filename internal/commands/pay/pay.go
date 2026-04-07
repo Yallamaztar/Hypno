@@ -46,7 +46,7 @@ func Pay(
 		return nil, fmt.Errorf("receiver (%d) doesnt exists", toPlayerID)
 	}
 
-	fromBalance, err := wallet.GetBalance(fromPlayerID)
+	fromBalance, err := wallet.Balance(fromPlayerID)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func Pay(
 		return nil, err
 	}
 
-	toBalance, err := wallet.GetBalance(toPlayerID)
+	toBalance, err := wallet.Balance(toPlayerID)
 	if err != nil {
 		return nil, err
 	}

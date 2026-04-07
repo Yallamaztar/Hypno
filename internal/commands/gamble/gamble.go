@@ -17,7 +17,6 @@ type Result struct {
 	Won     bool
 	Amount  int
 	Balance int
-	Message string
 }
 
 func Gamble(
@@ -36,11 +35,15 @@ func Gamble(
 
 	webhook *webhook.Webhook,
 ) (*Result, error) {
+	if !cfg.Gambling.Enabled {
+		return nil, fmt.Errorf("gambling is disabled")
+	}
+
 	if amount <= 0 {
 		return nil, fmt.Errorf("Invalid amount %d", amount)
 	}
 
-	balance, err := wallet.GetBalance(playerID)
+	balance, err := wallet.Balance(playerID)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +89,6 @@ func Gamble(
 			Won:     true,
 			Amount:  amount,
 			Balance: balance + amount,
-			Message: fmt.Sprintf("You just won %s%d!", cfg.Gambling.Currency, amount),
 		}, nil
 	}
 
@@ -119,7 +121,6 @@ func Gamble(
 		Won:     false,
 		Amount:  amount,
 		Balance: balance - amount,
-		Message: fmt.Sprintf("You just lost %s%d!", cfg.Gambling.Currency, amount),
 	}, nil
 }
 

@@ -16,6 +16,7 @@ import (
 	"plugin/internal/utils"
 	"plugin/internal/wallet"
 	"strings"
+	"time"
 )
 
 func registerClientCommands(
@@ -125,7 +126,7 @@ func registerClientCommands(
 			}
 
 			log.Infof("%s claimed the %s role\n", playerName, LevelToString(targetLevel))
-			rc.Tell(clientNum, fmt.Sprintf("You claimed the ^6%s role", LevelToString(targetLevel)))
+			rc.Tell(clientNum, fmt.Sprintf("You claimed the ^6%s^7 role", LevelToString(targetLevel)))
 		},
 	})
 
@@ -182,7 +183,7 @@ func registerClientCommands(
 		Help:     "Usage: ^6!gamble ^7<amount>",
 		MinArgs:  1,
 		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
-			balance, err := wallet.GetBalance(playerID)
+			balance, err := wallet.Balance(playerID)
 			if err != nil {
 				rc.Tell(clientNum, "Couldnt get your balance")
 				return
@@ -205,21 +206,15 @@ func registerClientCommands(
 				return
 			}
 
-			if err := rc.Tell(clientNum, res.Message); err != nil {
-				log.Errorln("Failed to send rc packet: ", err)
-			}
-
 			log.Infof("%s gambled %s%d and %s\n", playerName, cfg.Gambling.Currency, res.Amount, map[bool]string{true: "won", false: "lost"}[res.Won])
 			if res.Won {
-				err := rc.Say(fmt.Sprintf("%s just ^6won ^7%s%d!", playerName, cfg.Gambling.Currency, res.Amount))
-				if err != nil {
-					log.Errorln("Failed to send rc packet: ", err)
-				}
+				rc.Tell(clientNum, fmt.Sprintf("You just ^6won %s%d!", cfg.Gambling.Currency, amount))
+				time.Sleep(150 * time.Millisecond)
+				rc.Say(fmt.Sprintf("%s just ^6won ^7%s%d!", playerName, cfg.Gambling.Currency, res.Amount))
 			} else {
-				err := rc.Say(fmt.Sprintf("%s just ^6lost ^7%s%d!", playerName, cfg.Gambling.Currency, res.Amount))
-				if err != nil {
-					log.Errorln("Failed to send rc packet: ", err)
-				}
+				rc.Tell(clientNum, fmt.Sprintf("You just ^1lost^7 %s%d!", cfg.Gambling.Currency, amount))
+				time.Sleep(150 * time.Millisecond)
+				rc.Say(fmt.Sprintf("%s just ^6lost ^7%s%d!", playerName, cfg.Gambling.Currency, res.Amount))
 			}
 		},
 	})
@@ -239,7 +234,7 @@ func registerClientCommands(
 				return
 			}
 
-			balance, err := wallet.GetBalance(playerID)
+			balance, err := wallet.Balance(playerID)
 			if err != nil {
 				rc.Tell(clientNum, "Couldnt get your balance")
 				return
@@ -278,7 +273,7 @@ func registerClientCommands(
 		MinArgs:  0,
 		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
 			if len(args) == 0 {
-				balance, err := wallet.GetBalance(playerID)
+				balance, err := wallet.Balance(playerID)
 				if err != nil {
 					rc.Tell(clientNum, "^1Error ^7getting your balance")
 					return
@@ -300,7 +295,7 @@ func registerClientCommands(
 				return
 			}
 
-			balance, err := wallet.GetBalance(target.ID)
+			balance, err := wallet.Balance(target.ID)
 			if err != nil {
 				rc.Tell(clientNum, "^1Error ^7getting player's balance")
 				return
@@ -319,7 +314,7 @@ func registerClientCommands(
 		Help:     "Usage: ^6!bankbalance",
 		MinArgs:  0,
 		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
-			bal, err := bank.GetBalance()
+			bal, err := bank.Balance()
 			if err != nil {
 				rc.Tell(clientNum, "Couldnt get the banks balance")
 				return

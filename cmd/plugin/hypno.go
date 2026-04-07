@@ -40,11 +40,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	// do database migrations
 	if err := database.Migrate(db); err != nil {
 		log.Errorf("Failed database migration")
 		os.Exit(1)
 	}
 
+	// creating services
 	ps := players.New(players.NewRepository(db))
 	ws := wallet.New(wallet.NewRepository(db))
 	bs := bank.New(bank.NewRepository(db))
@@ -56,6 +58,7 @@ func main() {
 	log.Infoln("Database migrations done")
 
 	var wh *webhook.Webhook
+	// creating webhook and running bot if enabled
 	if cfg.Discord.Enabled {
 		println()
 		log.Infoln("Starting discord integrations")
@@ -72,6 +75,7 @@ func main() {
 		}
 
 		go func() {
+			// Start the discord bot
 			if err := bot.Run(cfg, ps, ws, bs, ls, pStats, gStats, wStats, wh); err != nil {
 				log.Errorf("Failed to start the discord bot: %+v\n", err)
 				os.Exit(1)
@@ -83,6 +87,7 @@ func main() {
 	}
 
 	var iw *iw4m.IW4MWrapper
+	// creating IW4M-Admin wrapper if enabled
 	if cfg.IW4MAdmin.Enabled {
 		println()
 		log.Infoln("Starting IW4M-Admin integrations")
@@ -103,6 +108,8 @@ func main() {
 		serverLog := logger.New(cfg.Server[i].Host, fmt.Sprintf("hypno_%d_log.log", i))
 
 		serverLog.Infoln("Starting RCON client")
+
+		// creating server specific rcon connections
 		rc, err := rcon.New(s.Host, s.Password, cfg, serverLog)
 		if err != nil {
 			serverLog.Errorf("Couldnt connect to RCON: %+v\n", err)
@@ -114,7 +121,6 @@ func main() {
 			serverLog.Debugln("Make sure you have the necessary GSC scripts in your server /t6/scripts/")
 			continue
 		}
-
 		serverLog.Infoln("Successfully connected to RCON & GSC")
 
 		serverLog.Infoln("Registering client commands")
@@ -122,11 +128,11 @@ func main() {
 		commands.RegisterCommands(cfg, rc, reg, ps, ws, bs, ls, pStats, gStats, wStats, serverLog, wh)
 
 		wg.Add(1)
-		go func(rc *rcon.RCON, log *logger.Logger) {
+		go func(rc *rcon.RCON, slog *logger.Logger) {
 			defer wg.Done()
 			defer rc.Close()
-			serverLog.Infoln("Hypno Plugin Starting!")
-			events.RunLogTailer(i, cfg, rc, reg, iw, ps, ws, wStats, log)
+			slog.Infoln("Hypno Plugin Starting!")
+			events.RunLogTailer(i, cfg, rc, reg, iw, ps, ws, wStats, slog)
 		}(rc, serverLog)
 	}
 
