@@ -442,37 +442,6 @@ func registerAdminCommands(
 		},
 	})
 
-	// !setorigin (!so) <player (optional)> <x> <y> <z>
-	// set players origin to given coords
-	reg.RegisterCommand(&register.Command{
-		Name:     "setorigin",
-		Aliases:  aliases{"so", "setorg", "setpos"},
-		MinLevel: levelAdmin,
-		MinArgs:  3,
-		Help:     "Usage: ^6!setorigin ^7<player (optional)> <x> <y> <z>",
-		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
-			args, err := parseArgs(args)
-			if err != nil {
-				rc.Tell(clientNum, err.Error())
-				return
-			}
-
-			cn, err := resolveClientNum(rc, reg, clientNum, args)
-			if err != nil {
-				rc.Tell(clientNum, err.Error())
-				return
-			}
-
-			if cn == -1 {
-				rc.Tell(clientNum, "^6"+rc.NameByClientNum(cn)+" ^7couldnt be found")
-				return
-			}
-
-			rc.Tell(clientNum, "Setting origin to "+args[1]+", "+args[2]+", "+args[3])
-			rc.SetInDvar(fmt.Sprintf("setorigin %d %s %s %s", cn, args[1], args[2], args[3]))
-		},
-	})
-
 	/*
 	 * IW4M-Admin gameinterface overrides
 	 * these just work way faster than iw4m-admins
@@ -701,6 +670,37 @@ func registerAdminCommands(
 
 			rc.Tell(clientNum, "Setting ^6"+rc.NameByClientNum(cn)+" ^7to spectator")
 			rc.SetInDvar(fmt.Sprintf("setspectator %d", cn))
+		},
+	})
+
+	// !goto (!g2) <player (optional)> <x> <y> <z>
+	// set players origin to given coords
+	reg.RegisterCommand(&register.Command{
+		Name:     "goto",
+		Aliases:  aliases{"g2"},
+		MinLevel: levelAdmin,
+		MinArgs:  3,
+		Help:     "Usage: ^6!goto ^7<player (optional)> <x> <y> <z>",
+		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
+			args, err := parseArgs(args)
+			if err != nil {
+				rc.Tell(clientNum, err.Error())
+				return
+			}
+
+			cn, err := resolveClientNum(rc, reg, clientNum, args)
+			if err != nil {
+				rc.Tell(clientNum, err.Error())
+				return
+			}
+
+			if cn == -1 {
+				rc.Tell(clientNum, "^6"+rc.NameByClientNum(cn)+" ^7couldnt be found")
+				return
+			}
+
+			rc.Tell(clientNum, "Setting origin to "+args[1]+", "+args[2]+", "+args[3])
+			rc.SetInDvar(fmt.Sprintf("setorigin %d %s %s %s", cn, args[1], args[2], args[3]))
 		},
 	})
 }

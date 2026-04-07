@@ -111,7 +111,7 @@ func registerOwnerCommands(
 	// add a new owner
 	reg.RegisterCommand(&register.Command{
 		Name:     "addowner",
-		Aliases:  aliases{"add"},
+		Aliases:  aliases{"ao"},
 		MinLevel: levelOwner,
 		MinArgs:  1,
 		Help:     "Usage: ^6!addowner^7 <xuid>",
@@ -142,7 +142,7 @@ func registerOwnerCommands(
 	// remove an owner
 	reg.RegisterCommand(&register.Command{
 		Name:     "removeowner",
-		Aliases:  aliases{"remove"},
+		Aliases:  aliases{"ro"},
 		MinLevel: levelOwner,
 		MinArgs:  1,
 		Help:     "Usage: ^6!removeowner^7 <xuid>",
@@ -173,7 +173,7 @@ func registerOwnerCommands(
 	// add a new admin
 	reg.RegisterCommand(&register.Command{
 		Name:     "addadmin",
-		Aliases:  aliases{"add"},
+		Aliases:  aliases{"aa"},
 		MinLevel: levelOwner,
 		MinArgs:  1,
 		Help:     "Usage: ^6!addadmin^7 <xuid>",
@@ -204,7 +204,7 @@ func registerOwnerCommands(
 	// remove an admin
 	reg.RegisterCommand(&register.Command{
 		Name:     "removeadmin",
-		Aliases:  aliases{"remove"},
+		Aliases:  aliases{"ra"},
 		MinLevel: levelOwner,
 		MinArgs:  1,
 		Help:     "Usage: ^6!removeadmin^7 <xuid>",
