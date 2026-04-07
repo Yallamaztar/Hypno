@@ -5,6 +5,7 @@ import (
 	"plugin/internal/bank"
 	"plugin/internal/config"
 	"plugin/internal/discord/webhook"
+	"plugin/internal/iw4m"
 	"plugin/internal/links"
 	"plugin/internal/logger"
 	"plugin/internal/players"
@@ -45,6 +46,7 @@ func RegisterCommands(
 	cfg *config.Config,
 	rc *rcon.RCON,
 	reg *register.Register,
+	iw4m *iw4m.IW4MWrapper,
 
 	players *players.Service,
 	wallet *wallet.Service,
@@ -61,7 +63,7 @@ func RegisterCommands(
 	registerDeveloperCommands(cfg, rc, reg, players, wallet, bank, log)
 	registerOwnerCommands(cfg, rc, reg, players, log, webhook)
 	registerAdminCommands(cfg, rc, reg, players, wallet, bank, log)
-	registerClientCommands(cfg, rc, reg, players, wallet, bank, links, playerStats, gambleStats, walletStats, log, webhook)
+	registerClientCommands(cfg, rc, reg, iw4m, players, wallet, bank, links, playerStats, gambleStats, walletStats, log, webhook)
 }
 
 // resolveClientNum finds the client number of given target in args, if none found: return origins clientNum

@@ -61,6 +61,10 @@ func (w *IW4MWrapper) SetLevel(player, level string) error {
 	return w.ExecuteCommand(fmt.Sprintf("!sl %s %s", player, level))
 }
 
+func (w *IW4MWrapper) TempBan(clientID int, duration, reason string) error {
+	return w.ExecuteCommand(fmt.Sprintf("!tempban @%d %s %s", clientID, duration, reason))
+}
+
 func (w *IW4MWrapper) Ban(clientID int, reason string) error {
 	return w.ExecuteCommand(fmt.Sprintf("!ban @%d %s", clientID, reason))
 }

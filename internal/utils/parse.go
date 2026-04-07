@@ -7,6 +7,51 @@ import (
 	"strings"
 )
 
+func ParseDurationMultiplier(duration string) (int, error) {
+	duration = strings.ToLower(strings.TrimSpace(duration))
+	if duration == "" {
+		return 0, fmt.Errorf("invalid duration")
+	}
+
+	unit := duration[len(duration)-1]
+	valueStr := duration[:len(duration)-1]
+
+	base := SafeInt(valueStr, 0)
+	if base <= 0 {
+		return 0, fmt.Errorf("invalid duration value")
+	}
+
+	var minutes int64
+
+	switch unit {
+	case 'm':
+		if base > 60 {
+			return 0, fmt.Errorf("minutes cannot exceed 60")
+		}
+		minutes = base
+
+	case 'h':
+		if base > 24 {
+			return 0, fmt.Errorf("hours cannot exceed 24")
+		}
+		minutes = base * 60
+
+	case 'd':
+		if base > 30 {
+			return 0, fmt.Errorf("days cannot exceed 30")
+		}
+		minutes = base * 1440
+
+	default:
+		return 0, fmt.Errorf("invalid duration unit")
+	}
+
+	// Tuned scaling (~30d ≈ 1500x)
+	multiplier := max(int(float64(minutes)*0.035), 1)
+
+	return multiplier, nil
+}
+
 // SafeInt safely converts a string to an int64, returning a default value if the conversion fails
 func SafeInt(value string, defaultVal int64) int64 {
 	value = strings.TrimSpace(value)

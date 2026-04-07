@@ -7,6 +7,7 @@ import (
 	"plugin/internal/commands/pay"
 	"plugin/internal/config"
 	"plugin/internal/discord/webhook"
+	"plugin/internal/iw4m"
 	"plugin/internal/links"
 	"plugin/internal/logger"
 	"plugin/internal/players"
@@ -15,6 +16,7 @@ import (
 	"plugin/internal/stats"
 	"plugin/internal/utils"
 	"plugin/internal/wallet"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -23,6 +25,7 @@ func registerClientCommands(
 	cfg *config.Config,
 	rc *rcon.RCON,
 	reg *register.Register,
+	iw4m *iw4m.IW4MWrapper,
 
 	players *players.Service,
 	wallet *wallet.Service,
@@ -171,6 +174,63 @@ func registerClientCommands(
 			log.Infof("%s generated a new link code (%s)\n", playerName, code)
 			rc.Tell(clientNum, fmt.Sprintf("Your code is: ^6%s", code))
 			rc.Tell(clientNum, "use ^6/link <code> ^7in discord to link your account")
+		},
+	})
+
+	// !banflip (!bf) <duration> <amount>
+	// like gamble but more stakes and more fun naturally
+	reg.RegisterCommand(&register.Command{
+		Name:     "banflip",
+		Aliases:  aliases{"bf"},
+		MinLevel: levelUser,
+		Help:     "Usage: ^6!banflip ^7<duration> <amount>",
+		MinArgs:  2,
+		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
+			if !cfg.IW4MAdmin.Enabled {
+				rc.Tell(clientNum, "BANFLIP is not enabled")
+				return
+			}
+
+			balance, err := wallet.Balance(playerID)
+			if err != nil {
+				rc.Tell(clientNum, "Couldnt get your balance")
+				return
+			}
+
+			amount, err := utils.ParseAmountArg(args[1], balance)
+			if err != nil {
+				rc.Tell(clientNum, fmt.Sprintf("%s (%q)", err, args[1]))
+				return
+			}
+
+			multiplier, err := utils.ParseDurationMultiplier(args[0])
+			if err != nil {
+				rc.Tell(clientNum, fmt.Sprintf("Invalid duration: %s", args[0]))
+				return
+			}
+
+			rc.Say(fmt.Sprintf("Starting ^6BANFLIP^7 for %s WITH MUTLIPLIER ^6x%d", playerName, multiplier))
+			res, err := gamble.Gamble(playerID, playerName, (amount * multiplier), cfg, players, wallet, bank, playerStats, gambleStats, walletStats, webhook)
+			if err != nil {
+				rc.Say("it failed mb men")
+				return
+			}
+
+			if res.Won {
+				rc.Tell(clientNum, fmt.Sprintf("You just ^6won %s%d! WTF FUCK", cfg.Gambling.Currency, res.Amount))
+				rc.Say(fmt.Sprintf("WTF FUCK %s just ^2WON ^7%s%d!", playerName, cfg.Gambling.Currency, res.Amount))
+			} else {
+				rc.Tell(clientNum, fmt.Sprintf("You just ^1lost^7 %s%d!", cfg.Gambling.Currency, res.Amount))
+				rc.Say(fmt.Sprintf("LOL %s just ^1LOST ^7the BANFLIP!", playerName))
+				rc.Say("^1^Fget fucked kid")
+
+				iw4m.TempBan(
+					*iw4m.ClientIDFromGUID(rc.GUIDByClientNum(clientNum)),
+					args[0],
+					"I Lost Banflip with a potential multiplier of "+
+						strconv.Itoa(multiplier),
+				)
+			}
 		},
 	})
 

@@ -125,7 +125,7 @@ func main() {
 
 		serverLog.Infoln("Registering client commands")
 		reg := register.New(cfg, rc, ps, serverLog)
-		commands.RegisterCommands(cfg, rc, reg, ps, ws, bs, ls, pStats, gStats, wStats, serverLog, wh)
+		commands.RegisterCommands(cfg, rc, reg, iw, ps, ws, bs, ls, pStats, gStats, wStats, serverLog, wh)
 
 		wg.Add(1)
 		go func(rc *rcon.RCON, slog *logger.Logger) {
