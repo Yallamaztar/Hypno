@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// SafeInt safely converts a string to an int64, returning a default value if the conversion fails
 func SafeInt(value string, defaultVal int64) int64 {
 	value = strings.TrimSpace(value)
 	if value == "" {
@@ -19,6 +20,7 @@ func SafeInt(value string, defaultVal int64) int64 {
 	return defaultVal
 }
 
+// ParseAmountArg parses a string argument representing an amount and returns the corresponding int value
 func ParseAmountArg(arg string, balance int) (int, error) {
 	switch strings.ToLower(arg) {
 	case "all", "a":
@@ -34,6 +36,7 @@ func ParseAmountArg(arg string, balance int) (int, error) {
 	}
 }
 
+// ParseAmount parses a string representing an amount and returns the corresponding int64 value
 func ParseAmount(amount string) int64 {
 	amount = strings.ToLower(strings.TrimSpace(amount))
 	if amount == "" {

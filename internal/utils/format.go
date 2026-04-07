@@ -2,6 +2,7 @@ package utils
 
 import "strconv"
 
+// FormatMoney formats a number with commas so its easier to read, (E.g 1000000 -> "1,000,000")
 func FormatMoney(amount int) string {
 	neg := amount < 0
 	if neg {

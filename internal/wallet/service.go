@@ -23,8 +23,8 @@ func (s *Service) Create(id, startingBalance int) error {
 	return s.repo.Create(id, startingBalance)
 }
 
-func (s *Service) GetBalance(playerID int) (int, error) {
-	return s.repo.GetBalance(playerID)
+func (s *Service) Balance(playerID int) (int, error) {
+	return s.repo.Balance(playerID)
 }
 
 func (s *Service) SetBalance(playerID int, amount int) error {
@@ -79,7 +79,7 @@ func (s *Service) WalletToWallet(fromID, toID, amount int) error {
 		return fmt.Errorf("cannot transfer to the same wallet")
 	}
 
-	bal, err := s.repo.GetBalance(fromID)
+	bal, err := s.repo.Balance(fromID)
 	if err != nil {
 		return err
 	}

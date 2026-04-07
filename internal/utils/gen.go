@@ -4,9 +4,10 @@ import (
 	"crypto/rand"
 )
 
-func GenerateCode() string {
-	const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
+// GenerateCode generates a linking code for linking ingame account with discord account
+func GenerateCode() string {
 	buf := make([]byte, 6)
 	if _, err := rand.Read(buf); err != nil {
 		return ""

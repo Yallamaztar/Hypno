@@ -7,6 +7,7 @@ import (
 	"sync"
 )
 
+// wallet represents a player's wallet
 type wallet struct {
 	PlayerID int
 	Balance  int
@@ -20,7 +21,7 @@ type repository struct {
 
 type Repository interface {
 	Create(playerID int, startingBalance int) error
-	GetBalance(playerID int) (int, error)
+	Balance(playerID int) (int, error)
 	SetBalance(playerID int, amount int) error
 	Deposit(playerID int, amount int) error
 	Withdraw(playerID int, amount int) error
@@ -33,6 +34,8 @@ type Repository interface {
 func NewRepository(db *sql.DB) Repository {
 	return &repository{db: db}
 }
+
+// Create creates a new wallet for a player
 func (r *repository) Create(playerID int, startingBalance int) error {
 	res, err := r.db.Exec(queries.CreateWallet, playerID, startingBalance)
 	if err != nil {
@@ -42,7 +45,9 @@ func (r *repository) Create(playerID int, startingBalance int) error {
 	_, err = res.RowsAffected()
 	return err
 }
-func (r *repository) GetBalance(playerID int) (int, error) {
+
+// Balance retrieves the balance of a players wallet
+func (r *repository) Balance(playerID int) (int, error) {
 	var balance int
 	err := r.db.QueryRow(queries.GetWalletBalanceByPlayerID, playerID).Scan(&balance)
 	if err != nil {
@@ -54,11 +59,13 @@ func (r *repository) GetBalance(playerID int) (int, error) {
 	return balance, nil
 }
 
+// SetBalance sets the balance of a players wallet
 func (r *repository) SetBalance(playerID int, amount int) error {
-	_, err := r.db.Exec(queries.SetBankBalance, amount, playerID)
+	_, err := r.db.Exec(queries.SetWalletBalance, amount, playerID)
 	return err
 }
 
+// Deposit deposits money into a players wallet
 func (r *repository) Deposit(playerID int, amount int) error {
 	_, err := r.db.Exec(queries.DepositToWallet, amount, playerID)
 	return err

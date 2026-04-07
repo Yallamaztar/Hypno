@@ -11,6 +11,7 @@ import (
 	"time"
 )
 
+// Handler is a function that handles a registered command
 type Handler func(
 	clientNum uint8,
 	playerID int,
@@ -20,6 +21,13 @@ type Handler func(
 	args []string,
 )
 
+// Command represents a registered command
+//   - Name: The name of the command
+//   - Aliases: List of aliases for the command
+//   - MinLevel: The minimum level required to use the command
+//   - Help: The help text for the command
+//   - MinArgs: The minimum number of arguments required for the command
+//   - Handler: The function that handles the command
 type Command struct {
 	Name     string
 	Aliases  []string
@@ -29,9 +37,10 @@ type Command struct {
 	Handler  Handler
 }
 
-type commands map[string]*Command
-type clients map[string]uint8
+type commands map[string]*Command // map command names and/or aliases to Command struct
+type clients map[string]uint8     // map player names to client numbers
 
+// Register manages registered commands and client information
 type Register struct {
 	commands commands
 	clients  clients
@@ -41,10 +50,10 @@ type Register struct {
 	players *players.Service
 
 	log *logger.Logger
-
-	mu sync.RWMutex
+	mu  sync.RWMutex
 }
 
+// New creates a new Register instance
 func New(cfg *config.Config, rc *rcon.RCON, players *players.Service, log *logger.Logger) *Register {
 	return &Register{
 		commands: make(commands),
@@ -58,6 +67,8 @@ func New(cfg *config.Config, rc *rcon.RCON, players *players.Service, log *logge
 		mu: sync.RWMutex{},
 	}
 }
+
+// RegisterCommand registers a new command
 func (r *Register) RegisterCommand(cmd *Command) {
 	if cmd.Handler == nil {
 		panic("command " + cmd.Name + " registered with nil handler")
@@ -75,6 +86,7 @@ func (r *Register) RegisterCommand(cmd *Command) {
 	r.log.Printf("Successfully registered command %s %v (level: %d)", c.Name, c.Aliases, c.MinLevel)
 }
 
+// Execute executes a registered command if found in Register.commands
 func (r *Register) Execute(
 	clientNum uint8,
 	playerID int,
@@ -100,7 +112,7 @@ func (r *Register) Execute(
 
 	if !r.hasPermission(level, cmd.MinLevel) {
 		r.log.Infoln("Player does not have permission for command:", cmd.Name)
-		r.tell(clientNum, fmt.Sprintf(
+		r.rc.Tell(clientNum, fmt.Sprintf(
 			"You ^1don't ^7have permission for !%s",
 			cmd.Name,
 		))
@@ -110,7 +122,7 @@ func (r *Register) Execute(
 	if len(args) < int(cmd.MinArgs) {
 		r.log.Infoln("Not enough arguments for command:", cmd.Name)
 		if cmd.Help != "" {
-			r.tell(clientNum, cmd.Help)
+			r.rc.Tell(clientNum, cmd.Help)
 		}
 		return
 	}
@@ -142,18 +154,13 @@ func (r *Register) hasPermission(level, required int) bool {
 	return level >= required
 }
 
-func (r *Register) tell(clientNum uint8, msg string) {
-	if r.rc != nil {
-		r.rc.Tell(clientNum, msg)
-	}
-}
-
 type PlayerInfo struct {
 	Name      string
 	GUID      *string
 	ClientNum *int
 }
 
+// FindPlayerPartial finds a player by a partial name match
 func (r *Register) FindPlayerPartial(partial string) *PlayerInfo {
 	name := strings.ToLower(strings.TrimSpace(partial))
 
@@ -195,9 +202,9 @@ func (r *Register) FindPlayerPartial(partial string) *PlayerInfo {
 				ClientNum: &p.ClientNum,
 			}
 		}
-
 	}
 
+	// fallback to db look up
 	player, err := r.players.GetByPartial(name)
 	if err != nil {
 		r.log.Errorln("Error occurred while fetching player by partial name")
