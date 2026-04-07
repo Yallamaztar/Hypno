@@ -5,6 +5,7 @@ init() {
     level thread inDvarListener();
 }
 
+// polls hypno_in dvar for commands and executes them
 inDvarListener() {
     level endon("game_ended");
     for(;;) {
@@ -48,11 +49,11 @@ registerCommand(name, minArgs, handler) {
     level.hypno_cmds[level.hypno_cmds.size] = cmd;
 }
 
+// splits command, validates arguments and calls the handler
 exec(cmd) {
     if (!IsDefined(cmd) || cmd == "") {
         return;
     }
-
     parts = StrTok(cmd, " ");
     if (!IsDefined(parts) || parts.size == 0) {
         return;
@@ -63,6 +64,7 @@ exec(cmd) {
         return;
     }
 
+    // build args
     args = [];
     for (i = 1; i < parts.size; i++) {
         args[args.size] = parts[i];
@@ -72,6 +74,7 @@ exec(cmd) {
         return;
     }
 
+    // call handler
     thread [[def.handler]](args);
 }
 
@@ -124,7 +127,7 @@ impl_freeze(args) {
         target.frozen = false;
     }
 
-    if (!target.frozen) {
+    if (!target.frozen) { 
         target FreezeControls(true);
         target.frozen = true;
         origin IPrintLnBold("Froze player " + target.name);
@@ -170,7 +173,8 @@ impl_teleport(args) {
 
 impl_setorigin(args) {
     target = findPlayerByClientNum(args[0]);
-    coords = array(int(args[1]), int(args[2]), int(args[3]));
+    // use () not array() or it breaks silently
+    coords = (int(args[1]), int(args[2]), int(args[3]));
     target SetOrigin(coords);
 }
 
@@ -237,3 +241,25 @@ impl_setspectator(args) {
     target = findPlayerByClientNum(args[0]);
     target [[level.spectator]]();
 }
+
+impl_bringall(args) {
+    target = findPlayerByClientNum(args[0]);
+    foreach(player in level.players) {
+        player SetOrigin(target.origin);
+    }
+}
+
+impl_savepos(args) {
+    target = findPlayerByClientNum(args[0]);
+    target.pers["saved_pos"] = target.origin;
+}
+
+impl_loadpos(args) {
+    target = findPlayerByClientNum(args[0]);
+    if (!IsDefined(target.pers["saved_pos"])) {
+        return;
+    }
+
+    target SetOrigin(target.pers["saved_pos"]);
+}
+
