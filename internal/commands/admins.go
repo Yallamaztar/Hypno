@@ -326,11 +326,6 @@ func registerAdminCommands(
 		MinArgs:  2,
 		Help:     "Usage: ^6!givemoney ^7<player> <amount>",
 		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
-			if !cfg.Gambling.Enabled {
-				rc.Tell(clientNum, "All gambling features are ^1disabled")
-				return
-			}
-
 			args, err := parseArgs(args)
 			if err != nil {
 				log.Errorln("Failed to parse args for !givemoney command")

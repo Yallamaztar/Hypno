@@ -12,7 +12,6 @@ import (
 	"plugin/internal/utils"
 	"plugin/internal/wallet"
 	"strings"
-	"time"
 )
 
 func RunLogTailer(
@@ -38,35 +37,30 @@ func RunLogTailer(
 	}()
 
 	for e := range eventsCh {
-		if !cfg.Gambling.Enabled {
-			time.Sleep(250 * time.Millisecond)
-			continue
-		}
-
 		switch event := e.(type) {
 		case *playerEvent:
 			switch event.Command {
 			case joinCommand:
 				if err := ensurePlayer(event.xuid, uint8(event.cn), event.name, reg, rc, cfg, iw4m, players, wallet, walletStats, log); err != nil {
 					log.Errorln("Failed to ensure player: " + err.Error())
-					return
+					continue
 				}
 
 				p, err := players.GetByXUID(event.xuid)
 				if err != nil {
 					log.Errorln("Failed to get player")
-					return
+					continue
 				}
 
 				if cfg.IW4MAdmin.Enabled {
 					if p.IW4MID == nil {
 						log.Warnf("IW4MID is nil for %s", p.Name)
-						return
+						continue
 					}
 					stats, err := iw4m.Stats(*p.IW4MID, index)
 					if err != nil {
 						log.Errorln("Failed to get IW4M-Admin stats")
-						return
+						continue
 					}
 
 					reward := utils.CalcJoinReward(stats.TotalSecondsPlayed, stats.Kills, stats.Deaths, cfg.Economy.JoinReward)
@@ -82,6 +76,11 @@ func RunLogTailer(
 				log.Infoln("Successfully processed join event for " + event.xuid)
 
 			case quitCommand:
+				if err := ensurePlayer(event.xuid, uint8(event.cn), event.name, reg, rc, cfg, iw4m, players, wallet, walletStats, log); err != nil {
+					log.Errorln("Failed to ensure player: " + err.Error())
+					continue
+				}
+
 				reg.RemoveClientNum(event.xuid)
 				statsMu.Lock()
 				delete(stats, event.xuid)
@@ -89,6 +88,11 @@ func RunLogTailer(
 
 			case sayCommand:
 				if cmd, ok := strings.CutPrefix(event.message, cfg.Server[index].CommandPrefix); ok {
+					if err := ensurePlayer(event.xuid, uint8(event.cn), event.name, reg, rc, cfg, iw4m, players, wallet, walletStats, log); err != nil {
+						log.Errorln("Failed to ensure player: " + err.Error())
+						continue
+					}
+
 					parts := strings.Fields(cmd)
 					if len(parts) > 0 {
 						args := []string{}
@@ -98,16 +102,16 @@ func RunLogTailer(
 
 						p, err := players.GetByXUID(event.xuid)
 						if err != nil {
-							return
+							continue
 						}
 
 						if p == nil {
-							return
+							continue
 						}
 
 						if err := ensurePlayer(event.xuid, uint8(event.cn), event.name, reg, rc, cfg, iw4m, players, wallet, walletStats, log); err != nil {
 							log.Errorln("Failed to ensure player: " + err.Error())
-							return
+							continue
 						}
 
 						reg.Execute(uint8(event.cn), p.ID, event.name, event.xuid, p.Level, parts[0], args)
@@ -122,12 +126,12 @@ func RunLogTailer(
 
 			if err := ensurePlayer(event.attackerXUID, uint8(event.attackerCN), event.attackerName, reg, rc, cfg, iw4m, players, wallet, walletStats, log); err != nil {
 				log.Errorln("Failed to ensure attacker: " + err.Error())
-				return
+				continue
 			}
 
 			if err := ensurePlayer(event.victimXUID, uint8(event.victimCN), event.victimName, reg, rc, cfg, iw4m, players, wallet, walletStats, log); err != nil {
 				log.Errorln("Failed to ensure victim: " + err.Error())
-				return
+				continue
 			}
 
 			go func() {
@@ -203,12 +207,12 @@ func RunLogTailer(
 					for _, ps := range status.Players {
 						p, err := players.GetByGUID(ps.GUID)
 						if err != nil {
-							return
+							continue
 						}
 
 						s, ok := stats[p.XUID]
 						if !ok {
-							return
+							continue
 						}
 
 						s.mu.Lock()
@@ -220,7 +224,7 @@ func RunLogTailer(
 						s.mu.Unlock()
 
 						if topKills < 7 {
-							return
+							continue
 						}
 
 						reward := utils.RandomReward()
@@ -248,7 +252,7 @@ func RunLogTailer(
 					for _, ps := range status.Players {
 						p, err := players.GetByGUID(ps.GUID)
 						if err != nil {
-							return
+							continue
 						}
 
 						s, ok := mostvaluable[p.XUID]
