@@ -228,7 +228,7 @@ impl_alert(args) {
     alert.iconname   = undefined;
     alert.sound      = "mpl_sab_ui_suitcasebomb_timer";
     alert.duration   = 7.5;
-    target.startmessagenotifyqueue[self.startmessagenotifyqueue.size] = alert;
+    target.startmessagenotifyqueue[target.startmessagenotifyqueue.size] = alert;
     target notify("received award");
 }
 
