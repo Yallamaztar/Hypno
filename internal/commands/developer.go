@@ -199,7 +199,7 @@ func registerDeveloperCommands(
 		MinArgs:  1,
 		Help:     "Usage: ^6!lookup^7 <name>",
 		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
-			target, err := players.GetByGUID(*reg.FindPlayerPartial(strings.Join(args, " ")).GUID)
+			target, err := players.GetByGUID(reg.FindPlayerPartial(strings.Join(args, " ")).GUID)
 			if err != nil {
 				rc.Tell(clientNum, "Player couldnt be found ("+args[0]+")")
 				return
