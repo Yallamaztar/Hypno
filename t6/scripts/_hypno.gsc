@@ -1,3 +1,15 @@
+/*
+ * _hypno.gsc
+ *
+ * Core Hypno server-side command handler.
+ * This script provides a lightweight command execution system driven by dvars
+ * External plugins (such as Hypno) can send commands through hypno_in dvar
+ * which are parsed, validated, and executed server-side.
+ *
+ * This acts as the bridge between the backend and in-game functionality
+ * all commands registered here are executed with threads
+ */
+
 init() {
     level.hypno_cmds = [];
     SetDvar("hypno_enabled", 1);

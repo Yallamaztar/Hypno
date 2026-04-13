@@ -23,7 +23,7 @@ init() {
     scripts\_integration_shared::RegisterScriptCommand("Hypno_printmoney", "printmoney", "print", "Print more money to the bank", "Owner", "T6", false, ::null);
     scripts\_integration_shared::RegisterScriptCommand("Hypno_xuid", "xuid", "info", "Show a players name, xuid and clientnum", "Owner", "T6", false, ::null);
     scripts\_integration_shared::RegisterScriptCommand("Hypno_crash", "crash", "panic", "Make the Hypno Plugin crash", "Owner", "T6", false, ::null);
-    scripts\_integration_shared::RegisterScriptCommand("Hypno_rcon", "rcon", "rc", "Execute an RCON command", "Owner", "T6", false, ::null);
+    scripts\_integration_shared::RegisterScriptCommand("Hypno_rcon", "rcon", "rc", "Execute a RCON command", "Owner", "T6", false, ::null);
     scripts\_integration_shared::RegisterScriptCommand("Hypno_lookup", "lookup", "find", "Lookup a player by name", "Owner", "T6", false, ::null);
     scripts\_integration_shared::RegisterScriptCommand("Hypno_discordinvite", "discordinvite", "invite", "Change the discord invite link", "Owner", "T6", false, ::null);
 
@@ -43,7 +43,7 @@ init() {
     scripts\_integration_shared::RegisterScriptCommand("Hypno_teleport", "teleport", "tp", "Teleport to a player", "SeniorAdmin", "T6", false, ::null);
     scripts\_integration_shared::RegisterScriptCommand("Hypno_sayas", "sayas", "says", "Say as a player", "SeniorAdmin", "T6", false, ::null);
     scripts\_integration_shared::RegisterScriptCommand("Hypno_stealmoney", "stealmoney", "steal", "Steal money from a player", "SeniorAdmin", "T6", false, ::null);
-    scripts\_integration_shared::RegisterScriptCommand("Hypno_givemoney", "givemoney", "gi", "Give an money to a player", "SeniorAdmin", "T6", false, ::null);
+    scripts\_integration_shared::RegisterScriptCommand("Hypno_givemoney", "givemoney", "gi", "Give money to a player", "SeniorAdmin", "T6", false, ::null);
     scripts\_integration_shared::RegisterScriptCommand("Hypno_giveall", "giveall", "ga", "Give money to all players", "SeniorAdmin", "T6", false, ::null);
     scripts\_integration_shared::RegisterScriptCommand("Hypno_setorigin", "setorigin", "so", "Set a player's origin", "SeniorAdmin", "T6", false, ::null);
 }
