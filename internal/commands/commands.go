@@ -78,7 +78,7 @@ func resolveClientNum(rcon *rcon.RCON, reg *register.Register, clientNum uint8, 
 		return -1, fmt.Errorf("^6%s ^7couldnt be found", query)
 	}
 
-	cn := rcon.ClientNumByGUID(*target.GUID)
+	cn := rcon.ClientNumByGUID(target.GUID)
 	if cn == -1 {
 		return -1, fmt.Errorf("^6%s ^7couldnt be found ingame", target.Name)
 	}
@@ -102,7 +102,7 @@ func resolveClientNums(
 			return -1, fmt.Errorf("Coudlnt find ^6%s", query)
 		}
 
-		cn := rcon.ClientNumByGUID(*target.GUID)
+		cn := rcon.ClientNumByGUID(target.GUID)
 		if cn == -1 {
 			return -1, fmt.Errorf("^6%s ^7couldnt be found ingame", target.Name)
 		}

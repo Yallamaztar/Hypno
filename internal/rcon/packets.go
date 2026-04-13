@@ -9,7 +9,7 @@ import (
 func (r *RCON) buildPacket(command string, needsPrefix bool) []byte {
 	var payload string
 	if needsPrefix {
-		payload = fmt.Sprintf("rcon %s %s", r.password, command)
+		payload = fmt.Sprintf(`rcon "%s" %s`, r.password, command)
 	} else {
 		payload = command
 	}
