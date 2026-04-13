@@ -1,5 +1,17 @@
 package main
 
+/*
+ * hypno.go
+ *
+ * Entry point for the Hypno plugin.
+ * This application acts as the central controller for all Hypno systems,
+ * coordinating communication between game servers, external integrations,
+ * and internal services.
+ *
+ * The plugin is designed to be modular and concurrent, with each server
+ * running in its own goroutine while sharing common services.
+ */
+
 import (
 	"fmt"
 	"os"

@@ -268,8 +268,13 @@ func (r *RCON) Tell(clientNum uint8, message string) error {
 	}
 
 	full := fmt.Sprintf("[%s]: %s", r.config.Gambling.ConsoleName, message)
-	packet := r.buildPacket(fmt.Sprintf(`tell %d "%s"`, clientNum, full), true)
-	return r.sendWithRetry(packet)
+	packet := r.buildPacket(fmt.Sprintf("tell %d %s", clientNum, full), true)
+	if err := r.sendWithRetry(packet); err != nil {
+		r.log.Errorf("[RCON] Failed to send tell message: %w", err)
+		return err
+	}
+
+	return nil
 }
 
 func (r *RCON) Say(message string) error {
@@ -279,7 +284,11 @@ func (r *RCON) Say(message string) error {
 
 	full := fmt.Sprintf("[%s]: %s", r.config.Gambling.ConsoleName, message)
 	packet := r.buildPacket(fmt.Sprintf("say %s", full), true)
-	return r.sendWithRetry(packet)
+	if err := r.sendWithRetry(packet); err != nil {
+		r.log.Errorf("[RCON] Failed to send say message: %w", err)
+		return err
+	}
+	return nil
 }
 
 func (r *RCON) SayRaw(message string) error {
@@ -288,7 +297,11 @@ func (r *RCON) SayRaw(message string) error {
 	}
 
 	packet := r.buildPacket(fmt.Sprintf("say %s", message), true)
-	return r.sendPacket(packet)
+	if err := r.sendPacket(packet); err != nil {
+		r.log.Errorf("[RCON] Failed to send raw say message: %w", err)
+		return err
+	}
+	return nil
 }
 
 func (r *RCON) GUIDByClientNum(clientNum uint8) string {
@@ -303,6 +316,7 @@ func (r *RCON) GUIDByClientNum(clientNum uint8) string {
 		}
 	}
 
+	r.log.Errorf("[RCON] Client number %d not found", clientNum)
 	return ""
 }
 
@@ -318,6 +332,7 @@ func (r *RCON) ClientNumByGUID(guid string) int {
 		}
 	}
 
+	r.log.Errorf("[RCON] GUID %s not found", guid)
 	return -1
 }
 
@@ -333,5 +348,6 @@ func (r *RCON) NameByClientNum(clientNum int) string {
 		}
 	}
 
+	r.log.Errorf("[RCON] Client number %d not found", clientNum)
 	return ""
 }

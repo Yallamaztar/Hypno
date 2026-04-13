@@ -14,6 +14,8 @@ import (
 	"strings"
 )
 
+// RunLogTailer starts a log tailing worker for a specific server index.
+// It converts raw log lines into structured events and processes them.
 func RunLogTailer(
 	index int,
 
@@ -28,7 +30,10 @@ func RunLogTailer(
 
 	log *logger.Logger,
 ) {
+	// Buffered channel to avoid blocking log parsing under load
 	eventsCh := make(chan event, 128)
+
+	// Start log tailing in a separate goroutine
 	go func() {
 		if err := tail(log, cfg.Server[index].LogPath, eventsCh); err != nil {
 			log.Fatalf("Failed to tail file: %s: %w", cfg.Server[index].LogPath, err)
@@ -75,6 +80,7 @@ func RunLogTailer(
 
 				log.Infoln("Successfully processed join event for " + event.xuid)
 
+			// Cleanup player session data on disconnect
 			case quitCommand:
 				if err := ensurePlayer(event.xuid, uint8(event.cn), event.name, reg, rc, cfg, iw4m, players, wallet, walletStats, log); err != nil {
 					log.Errorln("Failed to ensure player: " + err.Error())
@@ -87,6 +93,7 @@ func RunLogTailer(
 				statsMu.Unlock()
 
 			case sayCommand:
+				// Ensure player exists in database and is properly initialized
 				if cmd, ok := strings.CutPrefix(event.message, cfg.Server[index].CommandPrefix); ok {
 					if err := ensurePlayer(event.xuid, uint8(event.cn), event.name, reg, rc, cfg, iw4m, players, wallet, walletStats, log); err != nil {
 						log.Errorln("Failed to ensure player: " + err.Error())
@@ -276,6 +283,7 @@ func RunLogTailer(
 	}
 }
 
+// Ensure player exists in database and is properly initialized
 func ensurePlayer(
 	xuid string,
 	clientNum uint8,

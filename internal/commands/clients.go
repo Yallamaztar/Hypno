@@ -53,6 +53,7 @@ func registerClientCommands(
 				rc.Tell(clientNum, "^1Error ^7getting player info")
 				return
 			}
+
 			if player == nil {
 				rc.Tell(clientNum, "^1Error ^7player not found")
 				return
@@ -81,26 +82,32 @@ func registerClientCommands(
 
 				existsOwner, err := players.ExistsByLevel(levelOwner)
 				if err != nil {
+					log.Errorln("[ClaimRole] %s (%d): Error checking owner status\n", playerName, playerID)
 					rc.Tell(clientNum, "^1Error ^7checking owner status")
 					return
 				}
+
 				if existsOwner {
+					log.Infoln("[ClaimRole] %s (%d): Tried to claim owner role\n", playerName, playerID)
 					rc.Tell(clientNum, "^6Owner ^7role already claimed")
 					return
 				}
 
 				existsDeveloper, err := players.ExistsByLevel(levelDeveloper)
 				if err != nil {
+					log.Errorln("[ClaimRole] %s (%d): Error checking developer status\n", playerName, playerID)
 					rc.Tell(clientNum, "^1Error ^7checking developer status")
 					return
 				}
 
 				if existsDeveloper {
+					log.Infoln("[ClaimRole] %s (%d): Tried to claim owner role", playerName, playerID)
 					rc.Tell(clientNum, "^6Developer ^7role already claimed")
 					return
 				}
 
 				if err := players.UpdateLevel(playerID, levelOwner); err != nil {
+					log.Errorln("[ClaimRole] %s (%d): Error updating player level\n", playerName, playerID)
 					rc.Tell(clientNum, "^1Error ^7updating player level")
 					return
 				}
@@ -110,25 +117,29 @@ func registerClientCommands(
 
 				exists, err := players.ExistsByLevel(levelDeveloper)
 				if err != nil {
+					log.Errorln("[ClaimRole] %s (%d): Error checking developer status\n", playerName, playerID)
 					rc.Tell(clientNum, "^1Error ^7checking developer status")
 					return
 				}
 				if exists {
+					log.Infoln("[ClaimRole] %s (%d): Tried to claim developer role\n", playerName, playerID)
 					rc.Tell(clientNum, "^6Developer ^7role already claimed")
 					return
 				}
 
 				if err := players.UpdateLevel(playerID, levelDeveloper); err != nil {
+					log.Errorln("[ClaimRole] %s (%d): Error updating player level\n", playerName, playerID)
 					rc.Tell(clientNum, "^1Error ^7updating player level")
 					return
 				}
 
 			default:
+				log.Infoln("[ClaimRole] %s (%d): Invalid role requested %s\n", playerName, playerID, role)
 				rc.Tell(clientNum, "^1Invalid ^7role ("+role+")")
 				return
 			}
 
-			log.Infof("%s claimed the %s role\n", playerName, LevelToString(targetLevel))
+			log.Infof("[ClaimRole] %s (%d): claimed the %s role\n", playerName, playerID, LevelToString(targetLevel))
 			rc.Tell(clientNum, fmt.Sprintf("You claimed the ^6%s^7 role", LevelToString(targetLevel)))
 		},
 	})
@@ -144,6 +155,7 @@ func registerClientCommands(
 		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
 			discordID, err := players.GetDiscordIDByID(playerID)
 			if err != nil {
+				log.Errorf("[Link] %s (%d): Error checking %+v\n", playerName, playerID, err)
 				rc.Tell(clientNum, "^1Error ^7checking your account, try again later")
 				return
 			}
@@ -162,16 +174,18 @@ func registerClientCommands(
 
 			code := utils.GenerateCode()
 			if code == "" {
+				log.Errorf("[Link] %s (%d): Failed to generate link code\n", playerName, playerID)
 				rc.Tell(clientNum, "^1Failed ^7to generate link code, ^6try again ^7later")
 				return
 			}
 
 			if err = links.Create(playerID, code); err != nil {
+				log.Errorf("[Link] %s (%d): Error saving link code to database: %+v\n", playerName, playerID, err)
 				rc.Tell(clientNum, "Failed to save link code to the database")
 				return
 			}
 
-			log.Infof("%s generated a new link code (%s)\n", playerName, code)
+			log.Infof("[Link] %s (%d): generated a new link code (%s)\n", playerName, playerID, code)
 			rc.Tell(clientNum, fmt.Sprintf("Your code is: ^6%s", code))
 			rc.Tell(clientNum, "use ^6/link <code> ^7in discord to link your account")
 		},
@@ -187,7 +201,7 @@ func registerClientCommands(
 		MinArgs:  2,
 		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
 			if !cfg.IW4MAdmin.Enabled {
-				rc.Tell(clientNum, "BANFLIP is not enabled")
+				rc.Tell(clientNum, "^6BANFLIP ^7is not enabled")
 				return
 			}
 
@@ -209,7 +223,7 @@ func registerClientCommands(
 				return
 			}
 
-			rc.Say(fmt.Sprintf("Starting ^6BANFLIP^7 for %s WITH MUTLIPLIER ^6x%d", playerName, multiplier))
+			rc.Say(fmt.Sprintf("Starting ^6BANFLIP^7 for %s with multiplier ^6x%d", playerName, multiplier))
 			res, err := gamble.Gamble(playerID, playerName, (amount * multiplier), cfg, players, wallet, bank, playerStats, gambleStats, walletStats, webhook)
 			if err != nil {
 				rc.Say("it failed mb men")
@@ -231,6 +245,8 @@ func registerClientCommands(
 						strconv.Itoa(multiplier),
 				)
 			}
+
+			log.Infoln("[BANFLIP] %s (%d): %t | multiplier: %d | duration: %s", playerName, playerID, map[bool]string{true: "won", false: "lost"}[res.Won], multiplier, args[0])
 		},
 	})
 
@@ -266,16 +282,17 @@ func registerClientCommands(
 				return
 			}
 
-			log.Infof("%s gambled %s%d and %s\n", playerName, cfg.Gambling.Currency, res.Amount, map[bool]string{true: "won", false: "lost"}[res.Won])
 			if res.Won {
-				rc.Tell(clientNum, fmt.Sprintf("You just ^6won %s%d!", cfg.Gambling.Currency, amount))
-				time.Sleep(150 * time.Millisecond)
+				rc.Tell(clientNum, fmt.Sprintf("You just ^6won^7 %s%d!", cfg.Gambling.Currency, amount))
+				time.Sleep(100 * time.Millisecond)
 				rc.Say(fmt.Sprintf("%s just ^6won ^7%s%d!", playerName, cfg.Gambling.Currency, res.Amount))
 			} else {
 				rc.Tell(clientNum, fmt.Sprintf("You just ^1lost^7 %s%d!", cfg.Gambling.Currency, amount))
-				time.Sleep(150 * time.Millisecond)
+				time.Sleep(100 * time.Millisecond)
 				rc.Say(fmt.Sprintf("%s just ^6lost ^7%s%d!", playerName, cfg.Gambling.Currency, res.Amount))
 			}
+
+			log.Infof("[GAMBLE] %s (%d): %s | amount: %s%d\n", playerName, playerID, map[bool]string{true: "won", false: "lost"}[res.Won], cfg.Gambling.Currency, res.Amount)
 		},
 	})
 
@@ -306,7 +323,7 @@ func registerClientCommands(
 				return
 			}
 
-			target, err := players.GetByGUID(*t.GUID)
+			target, err := players.GetByGUID(t.GUID)
 			if err != nil {
 				rc.Tell(clientNum, t.Name+" doesnt exists")
 				return
@@ -318,8 +335,8 @@ func registerClientCommands(
 				return
 			}
 
-			log.Infof("%s (%d) paid %s (%d) %s%d\n", playerName, playerID, target.Name, target.ID, cfg.Gambling.Currency, res.Amount)
 			rc.Tell(clientNum, res.Message)
+			log.Infof("[PAY] %s (%d): paid %s (%d) %s%d\n", playerName, playerID, target.Name, target.ID, cfg.Gambling.Currency, res.Amount)
 		},
 	})
 
@@ -349,7 +366,7 @@ func registerClientCommands(
 				return
 			}
 
-			target, err := players.GetByGUID(*t.GUID)
+			target, err := players.GetByGUID(t.GUID)
 			if err != nil {
 				rc.Tell(clientNum, t.Name+" doesnt exists")
 				return
@@ -362,6 +379,7 @@ func registerClientCommands(
 			}
 
 			rc.Tell(clientNum, fmt.Sprintf("^6%s's ^7balance: ^6%s%d", t.Name, cfg.Gambling.Currency, balance))
+			log.Infof("[BALANCE] %s (%d): checked %s's balance - %s%d\n", playerName, playerID, t.Name, cfg.Gambling.Currency, balance)
 		},
 	})
 
@@ -380,8 +398,8 @@ func registerClientCommands(
 				return
 			}
 
-			log.Infof("Bank balance is %s%d\n", cfg.Gambling.Currency, bal)
 			rc.Tell(clientNum, fmt.Sprintf("Bank balance is ^6%s%d", cfg.Gambling.Currency, bal))
+			log.Infof("[BANKBALANCE] %s (%d): Checked bank balance %s%d\n", playerName, playerID, cfg.Gambling.Currency, bal)
 		},
 	})
 
@@ -400,9 +418,9 @@ func registerClientCommands(
 				return
 			}
 
-			log.Infoln("Checking top 5 Richest Players:")
+			log.Infoln("[RICHEST] top 5 Richest Players:")
 			for i, w := range wallets {
-				log.Infof("[%d] %s %s%s", i+1, w.Name, cfg.Gambling.Currency, utils.FormatMoney(w.Balance))
+				log.Infof("  [%d] %s %s%s\n", i+1, w.Name, cfg.Gambling.Currency, utils.FormatMoney(w.Balance))
 				rc.Tell(clientNum, fmt.Sprintf("[%d] %s %s%s", i+1, w.Name, cfg.Gambling.Currency, utils.FormatMoney(w.Balance)))
 			}
 		},
@@ -423,9 +441,9 @@ func registerClientCommands(
 				return
 			}
 
-			log.Infoln("Checking top 5 Poorest Players:")
+			log.Infoln("[POOREST] top 5 Poorest Players:")
 			for i, w := range wallets {
-				log.Infof("[%d] %s %s%s", i+1, w.Name, cfg.Gambling.Currency, utils.FormatMoney(w.Balance))
+				log.Infof("  [%d] %s %s%s\n", i+1, w.Name, cfg.Gambling.Currency, utils.FormatMoney(w.Balance))
 				rc.Tell(clientNum, fmt.Sprintf("[%d] %s %s%s", i+1, w.Name, cfg.Gambling.Currency, utils.FormatMoney(w.Balance)))
 			}
 		},

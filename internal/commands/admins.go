@@ -11,6 +11,7 @@ import (
 	"plugin/internal/utils"
 	"plugin/internal/wallet"
 	"strings"
+	"time"
 )
 
 func registerAdminCommands(
@@ -35,17 +36,20 @@ func registerAdminCommands(
 		Handler: func(clientNum uint8, playerID int, playerName, xuid string, level int, args []string) {
 			args, err := parseArgs(args)
 			if err != nil {
+				log.Errorf("[Freeze] %s (%d): Error parsing arguments: %+v\n", playerName, playerID, err)
 				rc.Tell(clientNum, err.Error())
 				return
 			}
 
 			cn, err := resolveClientNum(rc, reg, clientNum, args)
 			if err != nil {
+				log.Errorln("[Freeze] %s (%d): Error resolving client number\n", playerName, playerID)
 				rc.Tell(clientNum, err.Error())
 				return
 			}
 
 			if cn == -1 {
+				log.Infoln("[Freeze] %s (%d): Client not found\n", playerName, playerID)
 				rc.Tell(clientNum, "^6"+rc.NameByClientNum(cn)+" ^7couldnt be found")
 				return
 			}
@@ -233,7 +237,7 @@ func registerAdminCommands(
 			}
 
 			target := reg.FindPlayerPartial(filtered[0])
-			if target == nil || *target.ClientNum == -1 {
+			if target == nil || target.ClientNum == -1 {
 				target = &register.PlayerInfo{Name: filtered[0]}
 			}
 
@@ -275,7 +279,7 @@ func registerAdminCommands(
 				return
 			}
 
-			target, err := players.GetByGUID(*t.GUID)
+			target, err := players.GetByGUID(t.GUID)
 			if err != nil {
 				rc.Tell(clientNum, t.Name+" not found")
 				return
@@ -313,7 +317,7 @@ func registerAdminCommands(
 
 			log.Infof("%s (%d) stole %s%s from %s (%d)\n", playerName, playerID, cfg.Gambling.Currency, utils.FormatMoney(amount), target.Name, target.ID)
 			rc.Tell(clientNum, fmt.Sprintf("Took ^6%s%s ^7from %s", cfg.Gambling.Currency, utils.FormatMoney(amount), target.Name))
-			rc.Tell(uint8(*t.ClientNum), fmt.Sprintf("%s took ^6%s%s ^7from you LOL", playerName, cfg.Gambling.Currency, utils.FormatMoney(amount)))
+			rc.Tell(uint8(t.ClientNum), fmt.Sprintf("%s took ^6%s%s ^7from you LOL", playerName, cfg.Gambling.Currency, utils.FormatMoney(amount)))
 		},
 	})
 
@@ -333,20 +337,6 @@ func registerAdminCommands(
 				return
 			}
 
-			t := reg.FindPlayerPartial(args[0])
-			if t == nil {
-				log.Errorln("Failed to find player")
-				rc.Tell(clientNum, args[0]+" not found")
-				return
-			}
-
-			target, err := players.GetByGUID(*t.GUID)
-			if err != nil {
-				log.Errorln("Failed to get player by GUID")
-				rc.Tell(clientNum, t.Name+" not found")
-				return
-			}
-
 			amount := utils.ParseAmount(args[1])
 			if amount <= 0 {
 				log.Errorln("Failed to parse amount for !givemoney command")
@@ -354,7 +344,7 @@ func registerAdminCommands(
 				return
 			}
 
-			if target.Level == levelAdmin {
+			if level == levelAdmin {
 				bankbal, err := bank.Balance()
 				if err != nil {
 					log.Errorln("Failed to get bank balance")
@@ -369,6 +359,20 @@ func registerAdminCommands(
 				}
 			}
 
+			t := reg.FindPlayerPartial(args[0])
+			if t == nil {
+				log.Errorln("Failed to find player")
+				rc.Tell(clientNum, args[0]+" not found")
+				return
+			}
+
+			target, err := players.GetByGUID(t.GUID)
+			if err != nil {
+				log.Errorln("Failed to get player by GUID")
+				rc.Tell(clientNum, t.Name+" not found")
+				return
+			}
+
 			if err := bank.Withdraw(int(amount)); err != nil {
 				log.Errorln("Failed to withdraw money from the bank")
 				rc.Tell(clientNum, "Couldnt get money from the bank")
@@ -381,9 +385,16 @@ func registerAdminCommands(
 				return
 			}
 
-			log.Infof("%s (%d) gave %s%s to %s (%d)\n", playerName, playerID, cfg.Gambling.Currency, utils.FormatMoney(int(amount)), target.Name, target.ID)
-			rc.Tell(clientNum, fmt.Sprintf("Gave %s ^6%s%s", target.Name, cfg.Gambling.Currency, utils.FormatMoney(int(amount))))
-			rc.Tell(uint8(*t.ClientNum), fmt.Sprintf("%s gave you ^6%s%s", playerName, cfg.Gambling.Currency, utils.FormatMoney(int(amount))))
+			if playerID == target.ID {
+				log.Infof("%s (%d) gave %s%d to himself\n", playerName, playerID, cfg.Gambling.Currency, amount)
+				rc.Tell(clientNum, fmt.Sprintf("Added ^6%s%d^7 to your wallet", cfg.Gambling.Currency, amount))
+				return
+			}
+
+			rc.Tell(clientNum, fmt.Sprintf("^6Gave^7 %s ^6%s%d", target.Name, cfg.Gambling.Currency, amount))
+			time.Sleep(100 * time.Millisecond)
+			rc.Tell(uint8(t.ClientNum), fmt.Sprintf("^6%s^7 gave you ^6%s%d", playerName, cfg.Gambling.Currency, amount))
+			log.Infof("[GIVE] %s (%d): gave %s%d to %s (%d)", playerName, playerID, cfg.Gambling.Currency, amount, target.Name, target.ID)
 		},
 	})
 
@@ -400,6 +411,21 @@ func registerAdminCommands(
 			if amount <= 0 {
 				rc.Tell(clientNum, "Invalid amount")
 				return
+			}
+
+			if level == levelAdmin {
+				bankbal, err := bank.Balance()
+				if err != nil {
+					log.Errorln("Failed to get bank balance")
+					rc.Tell(clientNum, "Couldnt get bank balance")
+					return
+				}
+
+				max := int(float64(bankbal) * cfg.Economy.MaxGive)
+				if int(amount) > max {
+					rc.Tell(clientNum, fmt.Sprintf("You can ^1only^7 give up to ^6%s%s^7", cfg.Gambling.Currency, utils.FormatMoney(max)))
+					return
+				}
 			}
 
 			status, err := rc.Status()
@@ -437,7 +463,7 @@ func registerAdminCommands(
 				}
 			}
 
-			log.Infof("%s (%d) gave %s%s to %d players\n", playerName, playerID, cfg.Gambling.Currency, utils.FormatMoney(int(amount)), len(status.Players))
+			log.Infof("[GIVEALL] %s (%d): gave %s%s to %d players\n", playerName, playerID, cfg.Gambling.Currency, utils.FormatMoney(int(amount)), len(status.Players))
 			rc.Say(fmt.Sprintf("%s gave ^6%s%s to everyone", playerName, cfg.Gambling.Currency, utils.FormatMoney(int(amount))))
 		},
 	})

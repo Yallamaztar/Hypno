@@ -101,12 +101,11 @@ func (r *Register) Execute(
 	r.mu.RUnlock()
 
 	if !ok {
-		r.log.Infoln("Command not found:", command)
 		return
 	}
 
 	if cmd.Handler == nil {
-		r.log.Infoln("Command handler is nil:", cmd.Name)
+		r.log.Warnln("Command handler is nil:", cmd.Name)
 		return
 	}
 
@@ -156,8 +155,8 @@ func (r *Register) hasPermission(level, required int) bool {
 
 type PlayerInfo struct {
 	Name      string
-	GUID      *string
-	ClientNum *int
+	GUID      string
+	ClientNum int
 }
 
 // FindPlayerPartial finds a player by a partial name match
@@ -189,8 +188,8 @@ func (r *Register) FindPlayerPartial(partial string) *PlayerInfo {
 		if target == name {
 			return &PlayerInfo{
 				Name:      p.Name,
-				GUID:      &p.GUID,
-				ClientNum: &p.ClientNum,
+				GUID:      p.GUID,
+				ClientNum: p.ClientNum,
 			}
 		}
 
@@ -198,8 +197,8 @@ func (r *Register) FindPlayerPartial(partial string) *PlayerInfo {
 		if strings.Contains(target, name) {
 			return &PlayerInfo{
 				Name:      p.Name,
-				GUID:      &p.GUID,
-				ClientNum: &p.ClientNum,
+				GUID:      p.GUID,
+				ClientNum: p.ClientNum,
 			}
 		}
 	}
@@ -219,7 +218,7 @@ func (r *Register) FindPlayerPartial(partial string) *PlayerInfo {
 
 	return &PlayerInfo{
 		Name:      player.Name,
-		GUID:      &player.GUID,
-		ClientNum: &cn,
+		GUID:      player.GUID,
+		ClientNum: cn,
 	}
 }
